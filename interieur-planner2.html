@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Huis Inrichten</title>
+
+<!-- ✅ Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🔧 AANPASBAAR BLOK — Firebase config
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const firebaseConfig = {
+    apiKey: "AIzaSyBfHRoIo3c_keZT2FhRCx_uAtl6K4vbdEk",
+    authDomain: "beetjewolf.firebaseapp.com",
+    projectId: "beetjewolf",
+    storageBucket: "beetjewolf.firebasestorage.app",
+    messagingSenderId: "5826122366",
+    appId: "1:5826122366:web:02b93e993f8279739bfe2f",
+    measurementId: "G-8SB21T3G4D"
+  };
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  // Maak auth & functies globaal beschikbaar voor de rest van de pagina
+  window._auth = auth;
+  window._googleSignIn = () => signInWithPopup(auth, provider).catch(err => {
+    console.error("Login mislukt:", err);
+    alert("Inloggen mislukt. Probeer het opnieuw.");
+  });
+  window._signOut = () => signOut(auth);
+
+  // Luister naar login-status
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      // Ingelogd: verberg loginscherm, toon app
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("mainApp").style.display = "block";
+
+      // Zet gebruikersnaam in de header
+      const nameEl = document.getElementById("userDisplayName");
+      if (nameEl) nameEl.textContent = user.displayName || user.email;
+
+      const avatarEl = document.getElementById("userAvatar");
+      if (avatarEl && user.photoURL) {
+        avatarEl.src = user.photoURL;
+        avatarEl.style.display = "block";
+      }
+
+      // Start de app
+      if (typeof render === "function") render();
+    } else {
+      // Niet ingelogd: toon loginscherm
+      document.getElementById("loginScreen").style.display = "flex";
+      document.getElementById("mainApp").style.display = "none";
+    }
+  });
+</script>
+
+<style>
+  :root{
+    --clay: #b5654a;
+    --clay-dark: #8f4f3a;
+    --ink: #2b2620;
+    --paper: #f6f1ea;
+    --paper-2: #ffffff;
+    --line: #e3d9cb;
+    --muted: #837a6d;
+    --done: #6b8f6b;
+    --wip: #c99a3e;
+    --todo: #b5654a;
+    --radius: 14px;
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+  }
+  h1,h2,h3{font-family: Georgia, "Iowan Old Style", "Times New Roman", serif; font-weight:600; margin:0;}
+  .app{max-width:640px; margin:0 auto; padding: 20px 18px 100px;}
+  header.top{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 6px 0 22px;
+  }
+  header.top h1{font-size: 26px; letter-spacing:-0.3px;}
+  header.top .sub{color:var(--muted); font-size:13px; margin-top:2px;}
+  .backbtn{
+    background:none; border:none; color:var(--clay); font-size:16px;
+    padding:6px 4px 6px 0; cursor:pointer; display:flex; align-items:center; gap:4px;
+  }
+  .backbtn svg{width:18px;height:18px;}
+
+  /* Room grid */
+  .rooms{display:grid; grid-template-columns: 1fr 1fr; gap:14px;}
+  .room-card{
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    position:relative;
+    cursor:pointer;
+    transition: transform .12s ease;
+  }
+  .room-card:active{transform: scale(0.97);}
+  .room-card h3{font-size:17px; margin-bottom:6px; padding-right:20px;}
+  .room-card .count{color:var(--muted); font-size:13px;}
+  .room-card .progress-bar{
+    height:5px; background:var(--line); border-radius:3px; margin-top:12px; overflow:hidden;
+  }
+  .room-card .progress-fill{height:100%; background:var(--clay);}
+  .room-icon{
+    width:34px; height:34px; border-radius:10px; background:#efe4d8;
+    display:flex; align-items:center; justify-content:center; margin-bottom:10px; font-size:18px;
+  }
+
+  .add-tile{
+    border: 1.5px dashed var(--line); border-radius: var(--radius);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:6px; padding: 18px; color: var(--clay); cursor:pointer; background:transparent;
+    min-height:104px;
+  }
+  .add-tile span{font-size:13px; color:var(--muted); font-weight:500;}
+  .add-tile .plus{font-size:26px; line-height:1;}
+
+  /* Project list */
+  .proj-list{display:flex; flex-direction:column; gap:10px; margin-top:6px;}
+  .proj-card{
+    background: var(--paper-2);
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 15px;
+    cursor:pointer;
+  }
+  .proj-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
+  .proj-title{font-size:16px; font-weight:600; font-family: Georgia, serif;}
+  .status-pill{
+    font-size:11.5px; padding:3px 9px; border-radius:20px; white-space:nowrap;
+    font-weight:600; letter-spacing:0.2px;
+  }
+  .status-todo{background:#f6e3db; color:var(--todo);}
+  .status-wip{background:#f7ecd4; color:var(--wip);}
+  .status-done{background:#dfeadf; color:var(--done);}
+  .proj-meta{color:var(--muted); font-size:12.5px; margin-top:6px; display:flex; gap:10px; flex-wrap:wrap;}
+  .proj-thumbs{display:flex; gap:6px; margin-top:10px;}
+  .proj-thumbs img{width:44px; height:44px; object-fit:cover; border-radius:8px; border:1px solid var(--line);}
+  .empty-state{
+    text-align:center; padding: 50px 20px; color:var(--muted);
+  }
+  .empty-state .big{font-size:15px; color:var(--ink); margin-bottom:4px; font-weight:600;}
+
+  /* FAB */
+  .fab{
+    position:fixed; right:20px; bottom: calc(24px + var(--safe-bottom));
+    width:56px; height:56px; border-radius:50%;
+    background:var(--clay); color:white; border:none; font-size:28px;
+    box-shadow: 0 6px 16px rgba(181,101,74,0.4);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; z-index:20;
+  }
+  .fab:active{background:var(--clay-dark);}
+
+  /* Sheet / modal */
+  .overlay{
+    position:fixed; inset:0; background:rgba(43,38,32,0.45);
+    display:none; align-items:flex-end; z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .sheet{
+    background:var(--paper); width:100%; max-height:92vh; overflow-y:auto;
+    border-radius:20px 20px 0 0; padding: 10px 20px calc(28px + var(--safe-bottom));
+    animation: slideup .22s ease;
+  }
+  @keyframes slideup{from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .sheet-handle{width:40px; height:4px; background:var(--line); border-radius:3px; margin: 8px auto 16px;}
+  .sheet h2{font-size:20px; margin-bottom:16px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12.5px; font-weight:600; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:0.4px;}
+  .field input[type=text], .field input[type=number], .field textarea, .field select{
+    width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px;
+    font-size:16px; background:var(--paper-2); color:var(--ink); font-family:inherit;
+  }
+  .field textarea{min-height:70px; resize:vertical;}
+  .dims-row{display:flex; gap:8px;}
+  .dims-row .field{flex:1; margin-bottom:0;}
+  .status-choice{display:flex; gap:8px; margin-top:4px;}
+  .status-choice button{
+    flex:1; padding:10px; border-radius:10px; border:1.5px solid var(--line);
+    background:var(--paper-2); font-size:13.5px; font-weight:600; color:var(--muted); cursor:pointer;
+  }
+  .status-choice button.active.todo{border-color:var(--todo); color:var(--todo); background:#f6e3db;}
+  .status-choice button.active.wip{border-color:var(--wip); color:var(--wip); background:#f7ecd4;}
+  .status-choice button.active.done{border-color:var(--done); color:var(--done); background:#dfeadf;}
+
+  .photo-grid{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;}
+  .photo-item{position:relative; width:72px; height:72px;}
+  .photo-item img{width:100%; height:100%; object-fit:cover; border-radius:10px; border:1px solid var(--line);}
+  .photo-item .rm{
+    position:absolute; top:-6px; right:-6px; width:20px; height:20px; border-radius:50%;
+    background:var(--ink); color:white; border:none; font-size:12px; display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .photo-add{
+    width:72px; height:72px; border-radius:10px; border:1.5px dashed var(--line);
+    display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--clay);
+    cursor:pointer; background:transparent;
+  }
+  input[type=file]{display:none;}
+
+  .btn-row{display:flex; gap:10px; margin-top:20px;}
+  .btn{
+    flex:1; padding:14px; border-radius:12px; border:none; font-size:15.5px; font-weight:600; cursor:pointer;
+  }
+  .btn-primary{background:var(--clay); color:white;}
+  .btn-primary:active{background:var(--clay-dark);}
+  .btn-ghost{background:transparent; color:var(--muted); border:1.5px solid var(--line);}
+  .btn-danger{background:transparent; color:#b5423a; border:1.5px solid #e8c9c4; flex:0 0 auto; padding:14px 16px;}
+
+  .detail-photos img{width:100%; border-radius:12px; margin-bottom:10px; border:1px solid var(--line);}
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     🔧 AANPASBAAR BLOK — Login scherm stijlen
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  #loginScreen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--paper);
+    padding: 40px 24px;
+    text-align: center;
+  }
+  .login-logo {
+    font-size: 64px;
+    margin-bottom: 16px;
+  }
+  .login-title {
+    font-family: Georgia, serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .login-sub {
+    color: var(--muted);
+    font-size: 15px;
+    margin-bottom: 40px;
+    max-width: 280px;
+    line-height: 1.5;
+  }
+  .btn-google {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 24px;
+    font-size: 15.5px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    transition: box-shadow .15s ease, transform .1s ease;
+  }
+  .btn-google:active { transform: scale(0.97); box-shadow: none; }
+  .btn-google svg { width: 22px; height: 22px; flex-shrink: 0; }
+  .login-footer {
+    margin-top: 48px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+  /* Gebruikersavatar in header */
+  .user-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .user-bar img {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid var(--line);
+    display: none;
+  }
+  .user-bar .name {
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .logout-btn {
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .logout-btn:active { background: var(--line); }
+</style>
+</head>
+<body>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     🔧 AANPASBAAR BLOK — Login scherm HTML
+     Pas de emoji, titel en subtitel naar wens aan
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="loginScreen" style="display:none;">
+  <div class="login-logo">🏠</div>
+  <div class="login-title">Huis Inrichten</div>
+  <div class="login-sub">Plan en volg alle projecten in jouw huis op één plek.</div>
+
+  <button class="btn-google" onclick="window._googleSignIn()">
+    <!-- Google kleur-logo -->
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
+    Inloggen met Google
+  </button>
+
+  <div class="login-footer">Alleen voor persoonlijk gebruik</div>
+</div>
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+<!-- Hoofd-app (verborgen tot inloggen) -->
+<div id="mainApp" style="display:none;">
+  <div class="app" id="app"></div>
+
+<!-- Room sheet -->
+<div class="overlay" id="roomOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2 id="roomSheetTitle">Nieuwe kamer</h2>
+    <div class="field">
+      <label>Naam</label>
+      <input type="text" id="roomName" placeholder="Bijv. Woonkamer">
+    </div>
+    <div class="field">
+      <label>Icoon</label>
+      <input type="text" id="roomIcon" placeholder="Emoji, bijv. 🛋️" maxlength="4">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-danger" id="roomDeleteBtn" style="display:none">Verwijderen</button>
+      <button class="btn btn-ghost" onclick="closeRoomSheet()">Annuleren</button>
+      <button class="btn btn-primary" onclick="saveRoom()">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Project sheet -->
+<div class="overlay" id="projOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2 id="projSheetTitle">Nieuw project</h2>
+    <div class="field">
+      <label>Titel</label>
+      <input type="text" id="projTitle" placeholder="Bijv. Nieuwe vloer leggen">
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <div class="status-choice">
+        <button type="button" data-s="todo" onclick="setStatus('todo')">Te doen</button>
+        <button type="button" data-s="wip" onclick="setStatus('wip')">Bezig</button>
+        <button type="button" data-s="done" onclick="setStatus('done')">Klaar</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Afmetingen</label>
+      <div class="dims-row">
+        <div class="field"><input type="number" step="0.01" id="projLength" placeholder="Lengte (m)"></div>
+        <div class="field"><input type="number" step="0.01" id="projWidth" placeholder="Breedte (m)"></div>
+        <div class="field"><input type="number" step="0.01" id="projHeight" placeholder="Hoogte (m)"></div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Opmerkingen</label>
+      <textarea id="projNotes" placeholder="Materialen, budget, ideeën, contactpersoon..."></textarea>
+    </div>
+    <div class="field">
+      <label>Foto's</label>
+      <div class="photo-grid" id="photoGrid">
+        <button type="button" class="photo-add" onclick="document.getElementById('photoInput').click()">+</button>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" multiple onchange="addPhotos(event)">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-danger" id="projDeleteBtn" style="display:none">Verwijderen</button>
+      <button class="btn btn-ghost" onclick="closeProjSheet()">Annuleren</button>
+      <button class="btn btn-primary" onclick="saveProject()">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<button class="fab" id="fab" onclick="handleFab()">+</button>
+</div><!-- /mainApp -->
+
+<script>
+/* ---------- Data ---------- */
+const STORE_KEY = "huisinrichten_data_v1";
+let data = load();
+let view = { screen: "rooms", roomId: null };
+let editing = { roomId: null, projectId: null };
+let currentStatus = "todo";
+let pendingPhotos = [];
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return { rooms: [] };
+}
+function save(){
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+/* ---------- Rendering ---------- */
+function render(){
+  const app = document.getElementById("app");
+  if(view.screen === "rooms"){
+    document.getElementById("fab").style.display = "flex";
+    app.innerHTML = renderRoomsScreen();
+  } else {
+    document.getElementById("fab").style.display = "flex";
+    app.innerHTML = renderRoomDetail(view.roomId);
+  }
+}
+
+function renderRoomsScreen(){
+  let html = `
+    <header class="top">
+      <div>
+        <h1>Mijn huis</h1>
+        <div class="sub">${data.rooms.length} kamer${data.rooms.length!==1?"s":""}</div>
+      </div>
+      <div class="user-bar">
+        <img id="userAvatar" src="" alt="avatar">
+        <span class="name" id="userDisplayName"></span>
+        <button class="logout-btn" onclick="window._signOut()">Uitloggen</button>
+      </div>
+    </header>
+  `;
+  if(data.rooms.length === 0){
+    html += `<div class="empty-state"><div class="big">Nog geen kamers</div>Tik op + om je eerste kamer toe te voegen</div>`;
+    return html;
+  }
+  html += `<div class="rooms">`;
+  data.rooms.forEach(r=>{
+    const total = r.projects.length;
+    const done = r.projects.filter(p=>p.status==="done").length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    html += `
+      <div class="room-card" onclick="openRoom('${r.id}')">
+        <div class="room-icon">${r.icon || "🏠"}</div>
+        <h3>${escapeHtml(r.name)}</h3>
+        <div class="count">${total} project${total!==1?"en":""}</div>
+        ${total ? `<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>` : ""}
+      </div>
+    `;
+  });
+  html += `</div>`;
+  return html;
+}
+
+function renderRoomDetail(roomId){
+  const room = data.rooms.find(r=>r.id===roomId);
+  if(!room){ view.screen="rooms"; return renderRoomsScreen(); }
+  let html = `
+    <button class="backbtn" onclick="goRooms()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      Kamers
+    </button>
+    <header class="top" style="padding-top:0;">
+      <div>
+        <h1>${room.icon || "🏠"} ${escapeHtml(room.name)}</h1>
+        <div class="sub">${room.projects.length} project${room.projects.length!==1?"en":""}</div>
+      </div>
+      <button class="backbtn" onclick="editRoom('${room.id}')" style="font-size:14px;">Bewerken</button>
+    </header>
+  `;
+  if(room.projects.length===0){
+    html += `<div class="empty-state"><div class="big">Nog geen projecten</div>Tik op + om een taak toe te voegen</div>`;
+    return html;
+  }
+  html += `<div class="proj-list">`;
+  const statusLabel = {todo:"Te doen", wip:"Bezig", done:"Klaar"};
+  room.projects.forEach(p=>{
+    const dims = [p.length,p.width,p.height].filter(Boolean);
+    const dimStr = dims.length ? `${p.length||"–"} × ${p.width||"–"}${p.height?` × ${p.height}`:""} m` : "";
+    html += `
+      <div class="proj-card" onclick="openProject('${room.id}','${p.id}')">
+        <div class="proj-top">
+          <div class="proj-title">${escapeHtml(p.title)}</div>
+          <div class="status-pill status-${p.status}">${statusLabel[p.status]}</div>
+        </div>
+        <div class="proj-meta">
+          ${dimStr ? `<span>📐 ${dimStr}</span>` : ""}
+          ${p.notes ? `<span>📝 ${escapeHtml(truncate(p.notes,40))}</span>` : ""}
+        </div>
+        ${p.photos && p.photos.length ? `<div class="proj-thumbs">${p.photos.slice(0,4).map(ph=>`<img src="${ph}">`).join("")}</div>` : ""}
+      </div>
+    `;
+  });
+  html += `</div>`;
+  return html;
+}
+
+function truncate(s,n){ return s.length>n ? s.slice(0,n)+"…" : s; }
+function escapeHtml(s){
+  const d = document.createElement("div");
+  d.textContent = s || "";
+  return d.innerHTML;
+}
+
+/* ---------- Navigation ---------- */
+function openRoom(id){ view.screen="detail"; view.roomId=id; render(); window.scrollTo(0,0); }
+function goRooms(){ view.screen="rooms"; view.roomId=null; render(); window.scrollTo(0,0); }
+
+function handleFab(){
+  if(view.screen==="rooms"){ openRoomSheet(); }
+  else { openProjectSheet(); }
+}
+
+/* ---------- Room sheet ---------- */
+function openRoomSheet(existingId){
+  editing.roomId = existingId || null;
+  const overlay = document.getElementById("roomOverlay");
+  const title = document.getElementById("roomSheetTitle");
+  const delBtn = document.getElementById("roomDeleteBtn");
+  if(existingId){
+    const r = data.rooms.find(x=>x.id===existingId);
+    title.textContent = "Kamer bewerken";
+    document.getElementById("roomName").value = r.name;
+    document.getElementById("roomIcon").value = r.icon || "";
+    delBtn.style.display = "block";
+  } else {
+    title.textContent = "Nieuwe kamer";
+    document.getElementById("roomName").value = "";
+    document.getElementById("roomIcon").value = "";
+    delBtn.style.display = "none";
+  }
+  delBtn.onclick = ()=>{
+    if(confirm("Deze kamer en alle projecten verwijderen?")){
+      data.rooms = data.rooms.filter(x=>x.id!==existingId);
+      save(); closeRoomSheet(); render();
+    }
+  };
+  overlay.classList.add("show");
+}
+function editRoom(id){ openRoomSheet(id); }
+function closeRoomSheet(){ document.getElementById("roomOverlay").classList.remove("show"); }
+function saveRoom(){
+  const name = document.getElementById("roomName").value.trim();
+  const icon = document.getElementById("roomIcon").value.trim();
+  if(!name){ alert("Geef de kamer een naam"); return; }
+  if(editing.roomId){
+    const r = data.rooms.find(x=>x.id===editing.roomId);
+    r.name = name; r.icon = icon;
+  } else {
+    data.rooms.push({ id: uid(), name, icon, projects: [] });
+  }
+  save(); closeRoomSheet(); render();
+}
+
+/* ---------- Project sheet ---------- */
+function openProjectSheet(existingId){
+  editing.projectId = existingId || null;
+  pendingPhotos = [];
+  const overlay = document.getElementById("projOverlay");
+  const title = document.getElementById("projSheetTitle");
+  const delBtn = document.getElementById("projDeleteBtn");
+  const room = data.rooms.find(r=>r.id===view.roomId);
+  if(existingId){
+    const p = room.projects.find(x=>x.id===existingId);
+    title.textContent = "Project bewerken";
+    document.getElementById("projTitle").value = p.title;
+    document.getElementById("projLength").value = p.length || "";
+    document.getElementById("projWidth").value = p.width || "";
+    document.getElementById("projHeight").value = p.height || "";
+    document.getElementById("projNotes").value = p.notes || "";
+    pendingPhotos = (p.photos || []).slice();
+    currentStatus = p.status;
+    delBtn.style.display = "block";
+    delBtn.onclick = ()=>{
+      if(confirm("Dit project verwijderen?")){
+        room.projects = room.projects.filter(x=>x.id!==existingId);
+        save(); closeProjSheet(); render();
+      }
+    };
+  } else {
+    title.textContent = "Nieuw project";
+    document.getElementById("projTitle").value = "";
+    document.getElementById("projLength").value = "";
+    document.getElementById("projWidth").value = "";
+    document.getElementById("projHeight").value = "";
+    document.getElementById("projNotes").value = "";
+    currentStatus = "todo";
+    delBtn.style.display = "none";
+  }
+  setStatus(currentStatus);
+  renderPhotoGrid();
+  overlay.classList.add("show");
+}
+function openProject(roomId, projId){
+  view.roomId = roomId;
+  openProjectSheet(projId);
+}
+function closeProjSheet(){ document.getElementById("projOverlay").classList.remove("show"); }
+
+function setStatus(s){
+  currentStatus = s;
+  document.querySelectorAll(".status-choice button").forEach(b=>{
+    b.classList.toggle("active", b.dataset.s===s);
+    b.classList.toggle(s, b.dataset.s===s);
+  });
+}
+
+function renderPhotoGrid(){
+  const grid = document.getElementById("photoGrid");
+  let html = "";
+  pendingPhotos.forEach((ph, i)=>{
+    html += `<div class="photo-item"><img src="${ph}"><button class="rm" onclick="removePhoto(${i})">✕</button></div>`;
+  });
+  html += `<button type="button" class="photo-add" onclick="document.getElementById('photoInput').click()">+</button>`;
+  grid.innerHTML = html;
+}
+function removePhoto(i){ pendingPhotos.splice(i,1); renderPhotoGrid(); }
+function addPhotos(event){
+  const files = Array.from(event.target.files || []);
+  let remaining = files.length;
+  if(!remaining) return;
+  files.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      pendingPhotos.push(e.target.result);
+      remaining--;
+      if(remaining===0) renderPhotoGrid();
+    };
+    reader.readAsDataURL(file);
+  });
+  event.target.value = "";
+}
+
+function saveProject(){
+  const title = document.getElementById("projTitle").value.trim();
+  if(!title){ alert("Geef het project een titel"); return; }
+  const room = data.rooms.find(r=>r.id===view.roomId);
+  const payload = {
+    title,
+    status: currentStatus,
+    length: document.getElementById("projLength").value,
+    width: document.getElementById("projWidth").value,
+    height: document.getElementById("projHeight").value,
+    notes: document.getElementById("projNotes").value.trim(),
+    photos: pendingPhotos.slice()
+  };
+  if(editing.projectId){
+    const p = room.projects.find(x=>x.id===editing.projectId);
+    Object.assign(p, payload);
+  } else {
+    room.projects.push({ id: uid(), ...payload });
+  }
+  save(); closeProjSheet(); render();
+}
+
+/* ---------- Init ---------- */
+render();
+</script>
+</body>
+</html>
