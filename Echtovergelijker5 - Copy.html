@@ -1,0 +1,3781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#27ae60">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Scan Comparator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --rose: #6fcf97;
+    --rose-deep: #27ae60;
+    --rose-pale: #f0faf4;
+    --rose-mid: #c8edda;
+    --cream: #f4faf6;
+    --ink: #1a2e22;
+    --ink-soft: #4a6b55;
+    --border: rgba(39,174,96,0.2);
+    --card: #fff;
+    --radius: 16px;
+    --shadow: 0 4px 24px rgba(39,174,96,0.12);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  h1, h2, h3 { font-family: 'DM Serif Display', serif; }
+
+  header {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  header h1 { font-size: 22px; color: var(--rose-deep); }
+  header .header-sub { font-size: 13px; color: var(--ink-soft); }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 16px;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .panel {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    background: linear-gradient(135deg, var(--rose-pale), var(--rose-mid));
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-header h2 { font-size: 16px; color: var(--rose-deep); }
+  .panel-header .tag { font-size: 11px; background: var(--rose-deep); color: white; padding: 2px 8px; border-radius: 20px; margin-left: auto; font-family: 'DM Sans'; }
+
+  .panel-body { padding: 16px; }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 2px dashed var(--rose);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.2s;
+    background: var(--rose-pale);
+    position: relative;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .upload-zone:hover { background: var(--rose-mid); }
+  .upload-zone.has-image { border-style: solid; padding: 0; }
+
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .upload-icon { font-size: 36px; }
+  .upload-zone p { color: var(--ink-soft); font-size: 13px; }
+
+  #myEchoPreview {
+    width: 100%;
+    max-height: 340px;
+    object-fit: contain;
+    display: none;
+    border-radius: 10px;
+  }
+
+  /* Canvas container */
+  .canvas-wrap {
+    position: relative;
+    background: #111;
+    border-radius: 10px;
+    overflow: hidden;
+    min-height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .canvas-wrap canvas {
+    display: block;
+    max-width: 100%;
+  }
+
+  /* Tools */
+  .tools-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 10px 0 6px;
+  }
+
+  .tool-btn {
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--ink);
+    font-family: 'DM Sans';
+    transition: all 0.15s;
+  }
+
+  .tool-btn:hover { background: var(--rose-pale); border-color: var(--rose); }
+  .tool-btn.active { background: var(--rose-deep); color: white; border-color: var(--rose-deep); }
+  .tool-btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
+  .tool-btn .icon { font-size: 15px; }
+
+  /* Week selector */
+  .week-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .week-selector label { font-size: 12px; color: var(--ink-soft); display: block; margin-bottom: 4px; }
+
+  .week-selector select, .week-selector input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 14px;
+    background: white;
+    color: var(--ink);
+    font-family: 'DM Sans';
+    appearance: none;
+    cursor: pointer;
+  }
+
+  .week-selector select:focus, .week-selector input:focus {
+    outline: none;
+    border-color: var(--rose);
+  }
+
+  .db-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    max-height: 180px;
+    overflow-y: auto;
+    padding: 2px;
+  }
+
+  .db-thumb {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    overflow: hidden;
+    cursor: pointer;
+    background: #f0e8ec;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-align: center;
+    padding: 4px;
+    transition: border-color 0.15s;
+  }
+
+  .db-thumb:hover { border-color: var(--rose); }
+  .db-thumb.selected { border-color: var(--rose-deep); }
+.db-thumb.gender-girl { background: #fde8f0; }
+  .db-thumb.gender-boy { background: #ddeeff; }
+  .db-thumb.gender-boy:hover { border-color: #5aabef; }
+  .db-thumb.gender-boy.selected { border-color: #1a78c2; }
+
+/* Databank panel header = groen (erft van :root, geen override nodig) */
+
+/* Meisjesfoto geselecteerd = roze */
+  .db-panel-girl #dbPanel .panel-header,
+  .db-panel-girl#dbPanel .panel-header {
+    background: linear-gradient(135deg, #fde8f0, #f7c6d8);
+    border-bottom-color: rgba(201,107,138,0.2);
+  }
+  .db-panel-girl #dbPanel .panel-header h2,
+  .db-panel-girl#dbPanel .panel-header h2 { color: #c96b8a; }
+  .db-panel-girl #dbPanel .panel-header .tag,
+  .db-panel-girl#dbPanel .panel-header .tag { background: #c96b8a; }
+
+  /* Jongensfoto geselecteerd = blauw (zelfde als basis, maar expliciet) */
+  .db-panel-boy#dbPanel .panel-header {
+    background: linear-gradient(135deg, #ddeeff, #b8d8f8);
+    border-bottom-color: rgba(26,120,194,0.2);
+  }
+  .db-panel-boy#dbPanel .panel-header h2 { color: #1a5fa0; }
+  .db-panel-boy#dbPanel .panel-header .tag { background: #1a78c2; }
+  .db-panel-boy#dbPanel .week-badge { background: #b8d8f8; color: #1a5fa0; }
+
+  /* Overlap panel */
+  .overlap-panel {
+    grid-column: 1 / -1;
+  }
+
+  .overlap-canvas-wrap {
+    position: relative;
+    background: #0a0a0a;
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #overlapCanvas {
+    display: block;
+    max-width: 100%;
+    cursor: crosshair;
+  }
+
+  .controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .control-item label {
+    font-size: 12px;
+    color: var(--ink-soft);
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .control-item .val {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--rose-deep);
+    float: right;
+  }
+
+  input[type=range] {
+    width: 100%;
+    accent-color: var(--rose-deep);
+    cursor: pointer;
+  }
+
+  .hint-bar {
+    background: var(--rose-pale);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Color picker row */
+  .color-row { display: flex; gap: 6px; align-items: center; margin-top: 6px; }
+  .color-swatch {
+    width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.15s;
+  }
+  .color-swatch.active { border-color: var(--ink); }
+
+  /* Text input overlay */
+  #textInput,
+  #dbTextInput {
+    position: absolute;
+    display: none;
+    border: 1.5px dashed var(--rose);
+    background: rgba(255,255,255,0.85);
+    padding: 4px 8px;
+    font-size: 14px;
+    border-radius: 4px;
+    z-index: 20;
+    min-width: 80px;
+    outline: none;
+    font-family: 'DM Sans';
+  }
+
+  .anno-list {
+    max-height: 80px;
+    overflow-y: auto;
+    margin-top: 8px;
+  }
+
+  .anno-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    padding: 3px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .anno-item button {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--rose-deep);
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .save-btn {
+    background: var(--rose-deep);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-family: 'DM Sans';
+    font-size: 13px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    margin-top: 12px;
+  }
+
+  .save-btn:hover { opacity: 0.85; }
+  .save-btn:disabled,
+  .save-btn.is-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-left: 4px;
+    margin-right: auto;
+  }
+  .header-actions .save-btn {
+    margin-top: 0;
+    padding: 7px 14px;
+    font-size: 12px;
+  }
+  .header-actions .save-btn#importProjectBtn {
+    background: #5a3ea0;
+  }
+  .header-actions .save-btn#saveProjectBtn {
+    background: #1a5fa0;
+  }
+  .header-actions .save-btn#saveProjectBtn:disabled,
+  .header-actions .save-btn#saveProjectBtn.is-disabled {
+    background: #9aa5ae;
+  }
+
+  .angle-display {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--rose-deep);
+    font-family: 'DM Serif Display';
+    margin-top: 6px;
+  }
+
+  .db-upload-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--rose-deep);
+    background: var(--rose-pale);
+    border: 1px dashed var(--rose);
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    font-family: 'DM Sans';
+    position: relative;
+    overflow: hidden;
+  }
+
+  .db-upload-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+  .week-badge {
+    font-size: 10px;
+    background: var(--rose-mid);
+    color: var(--rose-deep);
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-top: 2px;
+    display: inline-block;
+  }
+#fsOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #0a0a0a;
+    z-index: 1000;
+    flex-direction: column;
+  }
+  #fsOverlay.open { display: flex; }
+
+  #fsToolbar {
+    background: rgba(20,10,15,0.95);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+
+  #fsCanvasWrap {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  #fsCanvas {
+    display: block;
+    transform-origin: top left;
+    cursor: crosshair;
+  }
+
+  #fsTextInput {
+    position: absolute;
+    display: none;
+    border: 1.5px dashed var(--rose);
+    background: rgba(255,255,255,0.85);
+    padding: 4px 8px;
+    font-size: 14px;
+    border-radius: 4px;
+    z-index: 20;
+    min-width: 80px;
+    outline: none;
+    font-family: 'DM Sans';
+  }
+
+  #fsZoomLabel {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    margin-left: 4px;
+    min-width: 38px;
+  }
+
+  #fsAngleDisplay {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--rose);
+    font-family: 'DM Serif Display';
+    margin-left: auto;
+  }
+
+  .fs-color-swatch {
+    width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; transition: border-color 0.15s; flex-shrink: 0;
+  }
+  .fs-color-swatch.active { border-color: white; }
+
+  #fsToolbar .tool-btn {
+    background: rgba(30,10,20,0.95);
+    color: #ffffff;
+    border-color: rgba(255,255,255,0.15);
+  }
+  #fsToolbar .tool-btn:hover {
+    background: rgba(60,20,40,0.95);
+    border-color: var(--rose);
+  }
+  #fsToolbar .tool-btn.active {
+    background: var(--rose-deep);
+    color: white;
+    border-color: var(--rose-deep);
+  }
+  #fsToolbar .tool-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  scrollbar-width: thin;
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: var(--rose-mid); border-radius: 4px; }
+
+  #olOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #0a0a0a;
+    z-index: 1000;
+    flex-direction: column;
+  }
+  #olOverlay.open { display: flex; }
+
+  #olToolbar {
+    background: rgba(20,10,15,0.95);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  #olCanvasWrap {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: grab;
+  }
+
+  #olCanvas {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+
+/* Overlap panel kleur wisselt mee met basis-foto */
+  .overlap-theme-pink #overlapPanelHeader {
+    background: linear-gradient(135deg, #fde8f0, #f7c6d8);
+    border-bottom-color: rgba(201,107,138,0.2);
+  }
+  .overlap-theme-pink #overlapPanelTitle { color: #c96b8a; }
+  .overlap-theme-pink #overlapPanelTag { background: #c96b8a; }
+
+  .overlap-theme-blue #overlapPanelHeader {
+    background: linear-gradient(135deg, #ddeeff, #b8d8f8);
+    border-bottom-color: rgba(26,120,194,0.2);
+  }
+  .overlap-theme-blue #overlapPanelTitle { color: #1a5fa0; }
+  .overlap-theme-blue #overlapPanelTag { background: #1a78c2; }
+
+  .lang-toggle {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 999px;
+    padding: 5px 12px 5px 8px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: var(--ink);
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .lang-toggle:hover { background: var(--rose-pale); border-color: var(--rose); }
+  .lang-toggle .flag {
+    width: 22px;
+    height: 16px;
+    border-radius: 3px;
+    object-fit: cover;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+    display: block;
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+  body { overflow-x: hidden; }
+  canvas { max-width: 100%; touch-action: none; }
+  .canvas-wrap, .overlap-canvas-wrap, #fsCanvasWrap, #olCanvasWrap { touch-action: none; }
+  .overlap-edit-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 8px; flex-wrap: wrap; }
+  .overlap-edit-bar .edit-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  body.overlay-open { overflow: hidden; overscroll-behavior: none; }
+
+  @media (max-width: 860px) {
+    body { font-size: 15px; }
+    header {
+      flex-wrap: wrap;
+      padding: 10px 12px;
+      padding-top: max(10px, env(safe-area-inset-top));
+      gap: 8px;
+    }
+    header .header-actions {
+      order: 3;
+      width: 100%;
+      margin: 0;
+    }
+    header .header-actions .save-btn {
+      flex: 1;
+      min-height: 44px;
+      font-size: 13px;
+      padding: 10px 12px;
+    }
+    .lang-toggle {
+      min-height: 44px;
+      padding: 8px 14px 8px 10px;
+    }
+    .layout {
+      grid-template-columns: 1fr;
+      padding: 12px;
+      padding-bottom: max(24px, env(safe-area-inset-bottom));
+      gap: 14px;
+    }
+    .panel-body { padding: 12px; }
+    .upload-zone { min-height: 160px; padding: 18px 12px; }
+    .canvas-wrap { min-height: 220px; }
+    .overlap-canvas-wrap { min-height: 240px; }
+    #overlapCanvas, #olCanvas, #myEchoCanvas, #dbCanvas { width: 100%; height: auto; }
+    .tools-row { gap: 8px; }
+    .tool-btn {
+      min-height: 42px;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+    .color-swatch, .fs-color-swatch { width: 32px; height: 32px; }
+    .save-btn { min-height: 44px; padding: 10px 16px; font-size: 14px; }
+    .controls-grid { grid-template-columns: 1fr; gap: 16px; }
+    input[type=range] { min-height: 28px; }
+    .week-selector select, .week-selector input, #textInput, #dbTextInput, #fsTextInput {
+      font-size: 16px;
+    }
+    .hint-bar { align-items: flex-start; }
+    #fsToolbar, #olToolbar {
+      max-height: 42vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 8px 10px;
+      padding-top: max(8px, env(safe-area-inset-top));
+      gap: 8px;
+    }
+    #fsToolbar .tool-btn, #olToolbar .tool-btn { min-height: 40px; }
+    #olToolbar input[type=range] { width: 120px; max-width: 40vw; }
+    .overlap-edit-bar { flex-direction: column; align-items: stretch; }
+    .overlap-edit-bar .edit-group { width: 100%; }
+    .overlap-edit-bar .tool-btn { flex: 1; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+<div id="olOverlay">
+  <div id="olToolbar">
+    <span data-i18n="echoOverlap" style="color:white;font-family:'DM Serif Display';font-size:18px;color:var(--rose)">Echo Overlap</span>
+    <button class="tool-btn active" id="olEditMyBtn" onclick="setOverlapEdit('my')" style="margin-left:12px">
+      <span style="display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--rose-deep);background:var(--rose-deep);vertical-align:middle;margin-right:4px;transition:background 0.15s" id="olRadioMy"></span> <span data-i18n="myEcho">My scan</span>
+    </button>
+    <button class="tool-btn" id="olEditDbBtn" onclick="setOverlapEdit('db')">
+      <span style="display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--rose-deep);background:transparent;vertical-align:middle;margin-right:4px;transition:background 0.15s" id="olRadioDb"></span> <span data-i18n="comparisonPhoto">Comparison photo</span>
+    </button>
+<div style="margin-left:12px;display:flex;gap:6px;align-items:center">
+      <span data-i18n="opacityColon" style="font-size:12px;color:rgba(255,255,255,0.5)">Opacity:</span>
+      <input type="range" id="olOpSlider" min="0" max="100" value="70" oninput="olSyncFromSlider()" style="width:100px;accent-color:var(--rose-deep)">
+      <span id="olOpVal" style="font-size:12px;color:rgba(255,255,255,0.5);min-width:32px">70%</span>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,0.5);cursor:pointer;margin-left:4px">
+        <input type="checkbox" id="olKeepLinesOpaque" onchange="olSyncCheckbox()" checked>
+        <span data-i18n="linesVisible">Lines visible</span>
+      </label>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span data-i18n="scaleColon" style="font-size:12px;color:rgba(255,255,255,0.5)">Scale:</span>
+      <input type="range" id="olScaleSlider" min="20" max="200" value="100" oninput="olSyncFromSlider()" style="width:100px;accent-color:var(--rose-deep)">
+      <span id="olScaleVal" style="font-size:12px;color:rgba(255,255,255,0.5);min-width:38px">100%</span>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span data-i18n="rotationColon" style="font-size:12px;color:rgba(255,255,255,0.5)">Rotation:</span>
+      <input type="range" id="olRotSlider" min="-180" max="180" value="0" oninput="olSyncFromSlider()" style="width:100px;accent-color:var(--rose-deep)">
+      <span id="olRotVal" style="font-size:12px;color:rgba(255,255,255,0.5);min-width:32px">0°</span>
+    </div>
+    <button class="tool-btn" id="olRotateToggle" onclick="toggleOverlapRotateMode()" data-i18n-title="rotateModeHint">🔄 <span data-i18n="rotateMode">Rotate</span></button>
+    <button class="tool-btn" onclick="saveOverlap()" style="margin-left:auto">💾 <span data-i18n="save">Save</span></button>
+    <button class="tool-btn" onclick="closeOverlapFullscreen()" style="color:var(--rose)">✕ <span data-i18n="close">Close</span></button>
+  </div>
+  <div id="olCanvasWrap">
+    <canvas id="olCanvas"></canvas>
+  </div>
+</div>
+
+<div id="fsOverlay">
+  <div id="fsToolbar">
+    <button class="tool-btn" id="fsBtnLine" onclick="fsSetTool('line')"><span class="icon">📏</span> <span data-i18n="line">Line</span></button>
+    <button class="tool-btn" id="fsBtnAngle" onclick="fsSetTool('angle')"><span class="icon">📐</span> <span data-i18n="angle">Angle</span></button>
+    <button class="tool-btn" id="fsBtnDraw" onclick="fsSetTool('draw')"><span class="icon">✏️</span> <span data-i18n="perimeter">Perimeter</span></button>
+    <button class="tool-btn" id="fsBtnSelect" onclick="fsSetTool('select')"><span class="icon">🖱️</span> <span data-i18n="select">Select</span></button>
+    <button class="tool-btn" id="fsBtnText" onclick="fsSetTool('text')"><span class="icon">T</span> <span data-i18n="text">Text</span></button>
+   <button class="tool-btn" onclick="fsDeleteSelected()" data-i18n-title="deleteSelected"><span class="icon">🗑️</span></button>
+    <button class="tool-btn" id="fsUndoBtn" onclick="undo()" data-i18n-title="undoTitle" disabled>↩</button>
+    <button class="tool-btn" id="fsRedoBtn" onclick="redo()" data-i18n-title="redoTitle" disabled>↪</button>
+    <div class="fs-sep"></div>
+    <div class="fs-color-swatch active" style="background:#ff4d6d" data-c="#ff4d6d" onclick="fsSetColor(this)"></div>
+    <div class="fs-color-swatch" style="background:#00d4ff" data-c="#00d4ff" onclick="fsSetColor(this)"></div>
+    <div class="fs-color-swatch" style="background:#ffd700" data-c="#ffd700" onclick="fsSetColor(this)"></div>
+    <div class="fs-color-swatch" style="background:#7fff7f" data-c="#7fff7f" onclick="fsSetColor(this)"></div>
+    <div class="fs-color-swatch" style="background:#ffffff" data-c="#ffffff" onclick="fsSetColor(this)"></div>
+    <div class="fs-sep"></div>
+    <button class="tool-btn" onclick="fsZoomIn()"><span class="icon">🔍</span> +</button>
+    <button class="tool-btn" onclick="fsZoomOut()"><span class="icon">🔍</span> −</button>
+    <button class="tool-btn" onclick="fsResetZoom()"><span class="icon">⊡</span></button>
+    <span id="fsZoomLabel">100%</span>
+    <span id="fsAngleDisplay"></span>
+    <div class="fs-sep"></div>
+    <button class="tool-btn" onclick="closeFullscreen()" style="margin-left:auto;color:var(--rose)">✕ <span data-i18n="close">Close</span></button>
+  </div>
+  <div id="fsCanvasWrap">
+    <canvas id="fsCanvas"></canvas>
+    <input id="fsTextInput" type="text" data-i18n-placeholder="typeText" placeholder="Type text..." onkeydown="fsCommitText(event)">
+  </div>
+</div>
+<header>
+  <span style="font-size:24px">🤰</span>
+  <div class="header-actions">
+    <label class="save-btn" id="importProjectBtn" data-i18n-title="importProjectTitle" style="cursor:pointer;margin:0">
+      📂 <span data-i18n="importProject">Import project</span>
+      <input type="file" accept=".json" style="display:none" onchange="loadProject(event)">
+    </label>
+    <button type="button" class="save-btn is-disabled" id="saveProjectBtn" onclick="saveProject()" disabled data-i18n-title="saveProjectTitle">
+      📁 <span data-i18n="saveProject">Save project</span>
+    </button>
+  </div>
+  <button type="button" class="lang-toggle" id="langToggle" onclick="toggleLanguage()" title="Nederlands">
+    <img class="flag" id="langFlag" alt="" width="22" height="16" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 6'%3E%3Crect fill='%2321468B' width='9' height='6'/%3E%3Cpath d='M0,0 L9,6 M9,0 L0,6' stroke='%23fff' stroke-width='1.2'/%3E%3Cpath d='M0,0 L9,6 M9,0 L0,6' stroke='%23C8102E' stroke-width='0.7'/%3E%3Cpath d='M4.5,0 V6 M0,3 H9' stroke='%23fff' stroke-width='2'/%3E%3Cpath d='M4.5,0 V6 M0,3 H9' stroke='%23C8102E' stroke-width='1.2'/%3E%3C/svg%3E">
+    <span id="langToggleLabel">EN</span>
+  </button>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT: My Scan -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2 data-i18n="myScan">My Scan</h2>
+      <span class="tag" data-i18n="uploadMeasure">Upload & Measure</span>
+    </div>
+    <div class="panel-body">
+
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="myEchoFile" accept="image/*" onchange="loadMyEcho(event)">
+        <div class="upload-icon">🩻</div>
+        <p><strong data-i18n="dropMyScan">Click or drop your scan here</strong></p>
+        <p>JPG, PNG, BMP</p>
+      </div>
+
+<div id="myEchoCanvasWrap" style="display:none">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+          <button class="tool-btn" onclick="openFullscreen()" data-i18n-title="fullscreen">
+            <span class="icon">⛶</span> <span data-i18n="fullscreen">Fullscreen</span>
+          </button>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="myEchoCanvas"></canvas>
+          <input id="textInput" type="text" data-i18n-placeholder="typeText" placeholder="Type text..." onkeydown="commitText(event)">
+        </div>
+
+        <div class="tools-row">
+          <button class="tool-btn" id="btnLine" onclick="setTool('line')" data-i18n-title="measure">
+            <span class="icon">📏</span> <span data-i18n="line">Line</span>
+          </button>
+          <button class="tool-btn" id="btnAngle" onclick="setTool('angle')" data-i18n-title="measureAngle">
+            <span class="icon">📐</span> <span data-i18n="angle">Angle</span>
+          </button>
+          <button class="tool-btn" id="btnDraw" onclick="setTool('draw')" data-i18n-title="freeDraw">
+            <span class="icon">✏️</span> <span data-i18n="perimeter">Perimeter</span>
+          </button>
+          <button class="tool-btn" id="btnText" onclick="setTool('text')" data-i18n-title="text">
+            <span class="icon">T</span> <span data-i18n="text">Text</span>
+          </button>
+          <button class="tool-btn" id="btnSelect" onclick="setTool('select')" data-i18n-title="selectMove">
+            <span class="icon">🖱️</span> <span data-i18n="edit">Edit</span>
+          </button>
+<button class="tool-btn" onclick="deleteSelected()" data-i18n-title="deleteSelected">
+            <span class="icon">🗑️</span>
+          </button>
+          <button class="tool-btn" id="undoBtn" onclick="undo()" data-i18n-title="undoTitle" disabled>↩ <span data-i18n="undo">Undo</span></button>
+          <button class="tool-btn" id="redoBtn" onclick="redo()" data-i18n-title="redoTitle" disabled>↪ <span data-i18n="redo">Redo</span></button>
+          <button class="tool-btn" id="myFlipHBtn" onclick="toggleFlip('my','H')">↔ <span data-i18n="flip">Flip</span></button>
+          <button class="tool-btn" id="myFlipVBtn" onclick="toggleFlip('my','V')">↕ <span data-i18n="flip">Flip</span></button>
+        </div>
+        <div class="tools-row" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
+          <button class="tool-btn" onclick="zoomIn()" data-i18n-title="zoomIn">
+            <span class="icon">🔍</span> +
+          </button>
+          <button class="tool-btn" onclick="zoomOut()" data-i18n-title="zoomOut">
+            <span class="icon">🔍</span> −
+          </button>
+          <button class="tool-btn" onclick="resetZoom()" data-i18n-title="resetZoom">
+            <span class="icon">⊡</span> <span data-i18n="reset">Reset</span>
+          </button>
+          <span id="zoomLabel" style="font-size:12px;color:var(--ink-soft);align-self:center;margin-left:auto">100%</span>
+        </div>
+
+        <div class="color-row">
+          <span style="font-size:12px;color:var(--ink-soft)" data-i18n="color">Color:</span>
+          <div class="color-swatch active" style="background:#ff4d6d" data-c="#ff4d6d" onclick="setColor(this)"></div>
+          <div class="color-swatch" style="background:#00d4ff" data-c="#00d4ff" onclick="setColor(this)"></div>
+          <div class="color-swatch" style="background:#ffd700" data-c="#ffd700" onclick="setColor(this)"></div>
+          <div class="color-swatch" style="background:#7fff7f" data-c="#7fff7f" onclick="setColor(this)"></div>
+          <div class="color-swatch" style="background:#ffffff" data-c="#ffffff" onclick="setColor(this)"></div>
+          <span id="angleDisplay" class="angle-display" style="margin-left:auto"></span>
+        </div>
+
+        <div class="anno-list" id="annoList"></div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="save-btn" onclick="saveMyEcho()">💾 <span data-i18n="saveAsImage">Save as image</span></button>
+          <button class="save-btn" style="background:var(--ink-soft)" onclick="resetMyEcho()">↺ <span data-i18n="newPhoto">New photo</span></button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT: Comparison photo -->
+  <div class="panel" id="dbPanel">
+    <div class="panel-header" id="dbPanelHeader">
+      <h2 id="dbPanelTitle" data-i18n="comparisonPhoto">Comparison photo</h2>
+      <span class="tag" id="dbPanelTag" data-i18n="reference">Reference</span>
+    </div>
+    <div class="panel-body">
+
+      <div class="upload-zone" id="dbUploadZone">
+        <input type="file" id="dbPhotoFile" accept="image/*" onchange="loadDbPhoto(event)">
+        <div class="upload-icon">🩻</div>
+        <p><strong data-i18n="dropComparison">Click or drop a comparison photo here</strong></p>
+        <p>JPG, PNG, BMP</p>
+      </div>
+
+      <div id="dbPreviewWrap" style="margin-top:14px;display:none">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+          <button class="tool-btn" onclick="openDbFullscreen()" data-i18n-title="fullscreen">
+            <span class="icon">⛶</span> <span data-i18n="fullscreen">Fullscreen</span>
+          </button>
+        </div>
+        <div class="canvas-wrap" style="min-height:200px">
+          <canvas id="dbCanvas"></canvas>
+          <input id="dbTextInput" type="text" data-i18n-placeholder="typeText" placeholder="Type text..." onkeydown="commitDbText(event)">
+        </div>
+        <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <span id="dbLabel" style="font-size:13px;color:var(--ink-soft)"></span>
+          <button class="save-btn" style="margin:0" onclick="useDbInOverlap()"><span data-i18n="useInOverlap">Use in overlap →</span></button>
+        </div>
+
+        <div class="tools-row">
+          <button class="tool-btn" id="dbBtnLine" onclick="setDbTool('line')" data-i18n-title="measure">
+            <span class="icon">📏</span> <span data-i18n="line">Line</span>
+          </button>
+          <button class="tool-btn" id="dbBtnAngle" onclick="setDbTool('angle')" data-i18n-title="measureAngle">
+            <span class="icon">📐</span> <span data-i18n="angle">Angle</span>
+          </button>
+          <button class="tool-btn" id="dbBtnDraw" onclick="setDbTool('draw')" data-i18n-title="freeDraw">
+            <span class="icon">✏️</span> <span data-i18n="perimeter">Perimeter</span>
+          </button>
+          <button class="tool-btn" id="dbBtnText" onclick="setDbTool('text')" data-i18n-title="text">
+            <span class="icon">T</span> <span data-i18n="text">Text</span>
+          </button>
+          <button class="tool-btn" id="dbBtnSelect" onclick="setDbTool('select')" data-i18n-title="selectMove">
+            <span class="icon">🖱️</span> <span data-i18n="edit">Edit</span>
+          </button>
+          <button class="tool-btn" onclick="deleteDbSelected()" data-i18n-title="deleteSelected">
+            <span class="icon">🗑️</span>
+          </button>
+          <button class="tool-btn" id="dbUndoBtn" onclick="dbUndo()" data-i18n-title="undoTitle" disabled>↩ <span data-i18n="undo">Undo</span></button>
+          <button class="tool-btn" id="dbRedoBtn" onclick="dbRedo()" data-i18n-title="redoTitle" disabled>↪ <span data-i18n="redo">Redo</span></button>
+          <button class="tool-btn" id="dbFlipHBtn" onclick="toggleFlip('db','H')">↔ <span data-i18n="flip">Flip</span></button>
+          <button class="tool-btn" id="dbFlipVBtn" onclick="toggleFlip('db','V')">↕ <span data-i18n="flip">Flip</span></button>
+        </div>
+        <div class="tools-row" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
+          <button class="tool-btn" onclick="dbZoomIn()" data-i18n-title="zoomIn">
+            <span class="icon">🔍</span> +
+          </button>
+          <button class="tool-btn" onclick="dbZoomOut()" data-i18n-title="zoomOut">
+            <span class="icon">🔍</span> −
+          </button>
+          <button class="tool-btn" onclick="dbResetZoom()" data-i18n-title="resetZoom">
+            <span class="icon">⊡</span> <span data-i18n="reset">Reset</span>
+          </button>
+          <span id="dbZoomLabel" style="font-size:12px;color:var(--ink-soft);align-self:center;margin-left:auto">100%</span>
+        </div>
+
+        <div class="color-row">
+          <span style="font-size:12px;color:var(--ink-soft)" data-i18n="color">Color:</span>
+          <div class="color-swatch db-color-swatch active" style="background:#ff4d6d" data-c="#ff4d6d" onclick="setDbColor(this)"></div>
+          <div class="color-swatch db-color-swatch" style="background:#00d4ff" data-c="#00d4ff" onclick="setDbColor(this)"></div>
+          <div class="color-swatch db-color-swatch" style="background:#ffd700" data-c="#ffd700" onclick="setDbColor(this)"></div>
+          <div class="color-swatch db-color-swatch" style="background:#7fff7f" data-c="#7fff7f" onclick="setDbColor(this)"></div>
+          <div class="color-swatch db-color-swatch" style="background:#ffffff" data-c="#ffffff" onclick="setDbColor(this)"></div>
+          <span id="dbAngleDisplay" class="angle-display" style="margin-left:auto"></span>
+        </div>
+
+        <div class="anno-list" id="dbAnnoList"></div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="save-btn" onclick="saveDbEcho()">💾 <span data-i18n="saveAsImage">Save as image</span></button>
+          <button class="save-btn" style="background:var(--ink-soft)" onclick="resetDbPhoto()">↺ <span data-i18n="newPhoto">New photo</span></button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<!-- BOTTOM: Overlap -->
+  <div class="panel overlap-panel" id="overlapPanel">
+    <div class="panel-header" id="overlapPanelHeader">
+      <h2 id="overlapPanelTitle" data-i18n="echoOverlap">Echo Overlap</h2>
+      <span class="tag" id="overlapPanelTag" data-i18n="compareAnalyze">Compare & Analyze</span>
+    </div>
+    <div class="panel-body">
+
+<div class="overlap-edit-bar">
+        <div class="edit-group">
+          <button class="tool-btn active" id="editMyBtn" onclick="setOverlapEdit('my')">
+            <span style="display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--rose-deep);background:var(--rose-deep);vertical-align:middle;margin-right:4px;transition:background 0.15s" id="radioMy"></span> <span data-i18n="editMyScan">Edit my scan</span>
+          </button>
+          <button class="tool-btn" id="editDbBtn" onclick="setOverlapEdit('db')">
+            <span style="display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--rose-deep);background:transparent;vertical-align:middle;margin-right:4px;transition:background 0.15s" id="radioDb"></span> <span data-i18n="editComparison">Edit comparison photo</span>
+          </button>
+          <button class="tool-btn" id="overlapRotateToggle" onclick="toggleOverlapRotateMode()" data-i18n-title="rotateModeHint">
+            🔄 <span data-i18n="rotateMode">Rotate</span>
+          </button>
+        </div>
+        <button class="tool-btn" onclick="openOverlapFullscreen()">
+          <span class="icon">⛶</span> <span data-i18n="fullscreen">Fullscreen</span>
+        </button>
+      </div>
+      <div class="overlap-canvas-wrap">
+        <canvas id="overlapCanvas" width="700" height="400"></canvas>
+      </div>
+
+<div class="controls-grid">
+        <div class="control-item">
+          <label id="opLbl">Opacity your scan <span class="val" id="opVal">70%</span></label>
+          <input type="range" id="opSlider" min="0" max="100" value="70" oninput="onOverlapControlInput()">
+          <label style="display:flex;align-items:center;gap:5px;margin-top:5px;font-size:12px;color:var(--ink-soft);cursor:pointer">
+            <input type="checkbox" id="keepLinesOpaque" onchange="onOverlapControlInput()" checked>
+            <span id="linesLbl" data-i18n="linesVisible">Lines visible</span>
+          </label>
+        </div>
+        <div class="control-item">
+          <label id="xLbl">X position your scan <span class="val" id="xVal">0px</span></label>
+          <input type="range" id="xSlider" min="-200" max="200" value="0" oninput="onOverlapControlInput()">
+        </div>
+        <div class="control-item">
+          <label id="yLbl">Y position your scan <span class="val" id="yVal">0px</span></label>
+          <input type="range" id="ySlider" min="-200" max="200" value="0" oninput="onOverlapControlInput()">
+        </div>
+        <div class="control-item">
+          <label id="scaleLbl">Scale your scan <span class="val" id="scaleVal">100%</span></label>
+          <input type="range" id="scaleSlider" min="20" max="200" value="100" oninput="onOverlapControlInput()">
+        </div>
+        <div class="control-item">
+          <label id="rotLbl">Rotation your scan <span class="val" id="rotVal">0°</span></label>
+          <input type="range" id="rotSlider" min="-180" max="180" value="0" oninput="onOverlapControlInput()">
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="save-btn" style="width:100%;margin:0" onclick="saveOverlap()">💾 <span data-i18n="saveOverlap">Save overlap</span></button>
+        </div>
+      </div>
+
+      <div class="hint-bar">
+        <span>💡</span>
+        <span data-i18n="overlapHint">Choose “Edit my scan” or “Edit comparison photo”. Position, scale, rotation and opacity are remembered per photo. Drag on the canvas to move; right-click = rotate; corner handle = scale.</span>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── i18n ─────────────────────────────────────────────────────────────────────
+const I18N = {
+  en: {
+    appTitle: 'Scan Comparator',
+    appSubtitle: 'Your scan • Comparison photo • Overlap analysis',
+    myScan: 'My Scan',
+    myEcho: 'My scan',
+    uploadMeasure: 'Upload & Measure',
+    dropMyScan: 'Click or drop your scan here',
+    fullscreen: 'Fullscreen',
+    typeText: 'Type text...',
+    line: 'Line',
+    angle: 'Angle',
+    perimeter: 'Perimeter',
+    text: 'Text',
+    select: 'Select',
+    edit: 'Edit',
+    measure: 'Measure',
+    measureAngle: 'Measure angle',
+    freeDraw: 'Free draw',
+    selectMove: 'Select / move',
+    deleteSelected: 'Delete selected annotation',
+    undo: 'Undo',
+    redo: 'Redo',
+    undoTitle: 'Undo (Ctrl+Z)',
+    redoTitle: 'Redo (Ctrl+Y)',
+    flip: 'Flip',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    resetZoom: 'Reset zoom',
+    reset: 'Reset',
+    color: 'Color:',
+    saveAsImage: 'Save as image',
+    saveAsProject: 'Save as project',
+    saveProject: 'Save project',
+    saveProjectTitle: 'Save annotations as a project (JSON) so you can continue later',
+    importProject: 'Import project',
+    importProjectTitle: 'Import a previously saved project (JSON)',
+    newPhoto: 'New photo',
+    comparisonPhoto: 'Comparison photo',
+    reference: 'Reference',
+    dropComparison: 'Click or drop a comparison photo here',
+    useInOverlap: 'Use in overlap →',
+    echoOverlap: 'Echo Overlap',
+    compareAnalyze: 'Compare & Analyze',
+    editMyScan: 'Edit my scan',
+    editComparison: 'Edit comparison photo',
+    opacity: 'Opacity',
+    opacityColon: 'Opacity:',
+    xPos: 'X position',
+    yPos: 'Y position',
+    scale: 'Scale',
+    scaleColon: 'Scale:',
+    rotation: 'Rotation',
+    rotationColon: 'Rotation:',
+    yourScan: 'your scan',
+    comparisonPhotoShort: 'comparison photo',
+    linesAlwaysVisible: 'Lines visible',
+    linesVisible: 'Lines visible',
+    saveOverlap: 'Save overlap',
+    save: 'Save',
+    close: 'Close',
+    rotateMode: 'Rotate',
+    rotateModeHint: 'On phone: tap Rotate, then drag to turn. Or use two fingers.',
+    overlapHint: 'Choose “Edit my scan” or “Edit comparison photo”. Drag to move. On a phone: pinch to scale, use Rotate (or two fingers) to turn; on a computer: right-click rotates. Corner handle also scales.',
+    overlapEmpty: 'Upload your scan on the left + comparison photo on the right',
+    loadScanFirst: 'Please load a scan image first.',
+    invalidProject: 'Invalid project file.',
+    projectImageError: 'Could not load the image from the project.',
+    projectLoadError: 'Error loading project: ',
+    noImgFolder: 'No <code>img/</code> folder found.<br>Upload scans manually with the button above.',
+    noEchoesFound: 'No scans found',
+    forWeek: ' for week ',
+    chooseWeek: '— Choose week —',
+    weeks: ' weeks',
+    week: 'Week',
+    annoLine: 'Line',
+    annoAngle: 'Angle',
+    annoPerimeter: 'Perimeter',
+    toggleVisibility: 'Hide / show',
+    switchToNl: 'Nederlands',
+    switchToEn: 'English',
+    langCode: 'EN'
+  },
+  nl: {
+    appTitle: 'Echo Vergelijker',
+    appSubtitle: 'Jouw echo • Vergelijkingsfoto • Overlap analyse',
+    myScan: 'Mijn Echo',
+    myEcho: 'Mijn echo',
+    uploadMeasure: 'Upload & Meet',
+    dropMyScan: 'Klik of sleep je echo hier',
+    fullscreen: 'Volledig scherm',
+    typeText: 'Typ tekst...',
+    line: 'Lijn',
+    angle: 'Hoek',
+    perimeter: 'Omtrek',
+    text: 'Tekst',
+    select: 'Selecteer',
+    edit: 'Bewerk',
+    measure: 'Meten',
+    measureAngle: 'Hoek meten',
+    freeDraw: 'Vrij tekenen',
+    selectMove: 'Selecteren/verplaatsen',
+    deleteSelected: 'Verwijder geselecteerde annotatie',
+    undo: 'Undo',
+    redo: 'Redo',
+    undoTitle: 'Ongedaan maken (Ctrl+Z)',
+    redoTitle: 'Opnieuw (Ctrl+Y)',
+    flip: 'Spiegel',
+    zoomIn: 'Inzoomen',
+    zoomOut: 'Uitzoomen',
+    resetZoom: 'Reset zoom',
+    reset: 'Reset',
+    color: 'Kleur:',
+    saveAsImage: 'Opslaan als afbeelding',
+    saveAsProject: 'Opslaan als project',
+    saveProject: 'Project opslaan',
+    saveProjectTitle: 'Sla annotaties op als project (JSON) zodat je later verder kunt werken',
+    importProject: 'Project importeren',
+    importProjectTitle: 'Importeer een eerder opgeslagen project (JSON)',
+    newPhoto: 'Nieuwe foto',
+    comparisonPhoto: 'Vergelijkingsfoto',
+    reference: 'Referentie',
+    dropComparison: 'Klik of sleep een vergelijkingsfoto hier',
+    useInOverlap: 'Gebruik in overlap →',
+    echoOverlap: 'Echo Overlap',
+    compareAnalyze: 'Vergelijk & Analyseer',
+    editMyScan: 'Bewerk mijn echo',
+    editComparison: 'Bewerk vergelijkingsfoto',
+    opacity: 'Doorzichtigheid',
+    opacityColon: 'Doorzichtigheid:',
+    xPos: 'X-positie',
+    yPos: 'Y-positie',
+    scale: 'Schaal',
+    scaleColon: 'Schaal:',
+    rotation: 'Rotatie',
+    rotationColon: 'Rotatie:',
+    yourScan: 'jouw echo',
+    comparisonPhotoShort: 'vergelijkingsfoto',
+    linesAlwaysVisible: 'Lijnen zichtbaar',
+    linesVisible: 'Lijnen zichtbaar',
+    saveOverlap: 'Overlap opslaan',
+    save: 'Opslaan',
+    close: 'Sluiten',
+    rotateMode: 'Draaien',
+    rotateModeHint: 'Op de telefoon: tik op Draaien en sleep om te draaien. Of gebruik twee vingers.',
+    overlapHint: 'Kies “Bewerk mijn echo” of “Bewerk vergelijkingsfoto”. Sleep om te verplaatsen. Op de telefoon: knijp om te schalen, gebruik Draaien (of twee vingers) om te draaien; op de computer: rechtermuisknop draait. Het hoekpunt schaalt ook.',
+    overlapEmpty: 'Upload jouw echo links + vergelijkingsfoto rechts',
+    loadScanFirst: 'Laad eerst een echo afbeelding.',
+    invalidProject: 'Ongeldig projectbestand.',
+    projectImageError: 'Kon de afbeelding uit het project niet laden.',
+    projectLoadError: 'Fout bij het laden van het project: ',
+    noImgFolder: 'Geen <code>img/</code> map gevonden.<br>Upload echo\'s handmatig via de knop hierboven.',
+    noEchoesFound: 'Geen echo\'s gevonden',
+    forWeek: ' voor week ',
+    chooseWeek: '— Kies week —',
+    weeks: ' weken',
+    week: 'Week',
+    annoLine: 'Lijn',
+    annoAngle: 'Hoek',
+    annoPerimeter: 'Omtrek',
+    toggleVisibility: 'Verbergen/tonen',
+    switchToNl: 'Nederlands',
+    switchToEn: 'English',
+    langCode: 'NL'
+  }
+};
+
+const FLAG_EN = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 6'%3E%3Crect fill='%2321468B' width='9' height='6'/%3E%3Cpath d='M0,0 L9,6 M9,0 L0,6' stroke='%23fff' stroke-width='1.2'/%3E%3Cpath d='M0,0 L9,6 M9,0 L0,6' stroke='%23C8102E' stroke-width='0.7'/%3E%3Cpath d='M4.5,0 V6 M0,3 H9' stroke='%23fff' stroke-width='2'/%3E%3Cpath d='M4.5,0 V6 M0,3 H9' stroke='%23C8102E' stroke-width='1.2'/%3E%3C/svg%3E";
+const FLAG_NL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 6'%3E%3Crect fill='%23AE1C28' width='9' height='2'/%3E%3Crect fill='%23fff' y='2' width='9' height='2'/%3E%3Crect fill='%2321468B' y='4' width='9' height='2'/%3E%3C/svg%3E";
+
+let currentLang = localStorage.getItem('echoLang') || 'en';
+
+function t(key) {
+  return (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key;
+}
+
+function applyLanguage() {
+  document.documentElement.lang = currentLang;
+  document.title = t('appTitle');
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (!key) return;
+    el.textContent = t(key);
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const key = el.getAttribute('data-i18n-html');
+    if (!key) return;
+    el.innerHTML = t(key);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.getAttribute('data-i18n-title');
+    if (!key) return;
+    el.title = t(key);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (!key) return;
+    el.placeholder = t(key);
+  });
+
+  // Language toggle shows English flag in EN mode (switch to NL), Dutch flag in NL mode
+  const flag = document.getElementById('langFlag');
+  const label = document.getElementById('langToggleLabel');
+  const btn = document.getElementById('langToggle');
+  if (flag) flag.src = currentLang === 'en' ? FLAG_EN : FLAG_NL;
+  if (label) label.textContent = currentLang === 'en' ? 'EN' : 'NL';
+  if (btn) btn.title = currentLang === 'en' ? t('switchToNl') : t('switchToEn');
+
+  // Reset dynamic label names so they rebuild in the new language
+  ['opLbl','xLbl','yLbl','scaleLbl','rotLbl'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) delete el.dataset.forName;
+  });
+
+  const selWeek = document.getElementById('selWeek');
+  if (selWeek) {
+    [...selWeek.options].forEach(o => {
+      if (o.value) o.textContent = o.value + t('weeks');
+      else o.textContent = t('chooseWeek');
+    });
+  }
+
+  if (typeof updateOverlapLabels === 'function') updateOverlapLabels();
+  if (typeof updateAnnoList === 'function') updateAnnoList();
+  if (typeof updateOverlap === 'function') updateOverlap();
+  if (document.getElementById('olOverlay')?.classList.contains('open') && typeof olRedraw === 'function') olRedraw();
+  if (typeof renderDbGrid === 'function' && document.getElementById('dbGrid')) renderDbGrid();
+}
+
+function toggleLanguage() {
+  currentLang = currentLang === 'en' ? 'nl' : 'en';
+  localStorage.setItem('echoLang', currentLang);
+  applyLanguage();
+}
+
+function updateSaveProjectBtn() {
+  const btn = document.getElementById('saveProjectBtn');
+  if (!btn) return;
+  const ok = !!myImg;
+  btn.disabled = !ok;
+  btn.classList.toggle('is-disabled', !ok);
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let myImg = null, dbImg = null;
+let tool = 'line';
+let dbTool = 'line';
+let drawColor = '#ff4d6d';
+let dbDrawColor = '#ff4d6d';
+let isDrawing = false;
+let startX = 0, startY = 0;
+let annotations = [];
+let freePoints = [];
+let anglePoints = [];
+let textItems = [];
+let pendingTextPos = null;
+
+// Comparison photo annotations
+let dbAnnotations = [];
+let dbTextItems = [];
+let dbFreePoints = [];
+let dbAnglePoints = [];
+let dbSelectedAnno = null;
+let dbSelectedPointKey = null;
+let dbIsDrawing = false;
+let dbIsDragging = false;
+let dbDragOffX = 0, dbDragOffY = 0;
+let dbStartX = 0, dbStartY = 0;
+let dbPendingTextPos = null;
+let dbUndoStack = [];
+let dbRedoStack = [];
+let dbZoomLevel = 1;
+let dbPanX = 0, dbPanY = 0;
+
+// Zoom state
+let zoomLevel = 1;
+let panX = 0, panY = 0;
+let isPanning = false;
+let panStartX = 0, panStartY = 0;
+let panStartPanX = 0, panStartPanY = 0;
+
+// Select/drag state
+let selectedAnno = null;
+let selectedPointKey = null;
+let isDragging = false;
+let dragOffX = 0, dragOffY = 0;
+
+let dbItems = [];
+let selectedDb = null;
+
+let myFlipH = false, myFlipV = false;
+let dbFlipH = false, dbFlipV = false;
+let overlapEditTarget = 'my'; // 'my' or 'db'
+
+// Separate edits per photo — kept when switching
+const overlapState = {
+  my: { x: 0, y: 0, scale: 100, rot: 0, opacity: 70, showLines: true },
+  db: { x: 0, y: 0, scale: 100, rot: 0, opacity: 100, showLines: true }
+};
+
+function getActiveOverlap() {
+  return overlapState[overlapEditTarget];
+}
+
+function syncSlidersFromActive() {
+  const s = getActiveOverlap();
+  document.getElementById('xSlider').value = s.x;
+  document.getElementById('ySlider').value = s.y;
+  document.getElementById('scaleSlider').value = s.scale;
+  document.getElementById('rotSlider').value = s.rot;
+  document.getElementById('opSlider').value = s.opacity;
+  const cb = document.getElementById('keepLinesOpaque');
+  if (cb) cb.checked = s.showLines !== false;
+  const olCb = document.getElementById('olKeepLinesOpaque');
+  if (olCb) olCb.checked = s.showLines !== false;
+
+  const olOp = document.getElementById('olOpSlider');
+  const olScale = document.getElementById('olScaleSlider');
+  const olRot = document.getElementById('olRotSlider');
+  if (olOp) olOp.value = s.opacity;
+  if (olScale) olScale.value = s.scale;
+  if (olRot) olRot.value = s.rot;
+  if (typeof olUpdateLabels === 'function') olUpdateLabels();
+  updateOverlapLabels();
+}
+
+function syncActiveFromSliders() {
+  const s = getActiveOverlap();
+  s.x = parseInt(document.getElementById('xSlider').value, 10);
+  s.y = parseInt(document.getElementById('ySlider').value, 10);
+  s.scale = parseFloat(document.getElementById('scaleSlider').value);
+  s.rot = parseFloat(document.getElementById('rotSlider').value);
+  s.opacity = parseFloat(document.getElementById('opSlider').value);
+  const cb = document.getElementById('keepLinesOpaque');
+  if (cb) s.showLines = cb.checked;
+}
+
+function onOverlapControlInput() {
+  syncActiveFromSliders();
+  // Houd fullscreen-schuiven gelijk aan actieve foto
+  const s = getActiveOverlap();
+  const olOp = document.getElementById('olOpSlider');
+  const olScale = document.getElementById('olScaleSlider');
+  const olRot = document.getElementById('olRotSlider');
+  if (olOp) olOp.value = s.opacity;
+  if (olScale) olScale.value = s.scale;
+  if (olRot) olRot.value = s.rot;
+  if (typeof olUpdateLabels === 'function') olUpdateLabels();
+  updateOverlap();
+  if (document.getElementById('olOverlay')?.classList.contains('open')) olRedraw();
+}
+
+function setOverlapEdit(target) {
+  if (target !== 'my' && target !== 'db') return;
+  // Huidige schuiven opslaan bij de huidige foto vóór wisselen
+  syncActiveFromSliders();
+  overlapEditTarget = target;
+  // Schuiven laden met opgeslagen waarden van de gekozen foto
+  syncSlidersFromActive();
+
+  ['editMyBtn','olEditMyBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('active', target === 'my');
+  });
+  ['editDbBtn','olEditDbBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('active', target === 'db');
+  });
+  document.getElementById('radioMy').style.background = target === 'my' ? 'var(--rose-deep)' : 'transparent';
+  document.getElementById('radioDb').style.background = target === 'db' ? 'var(--rose-deep)' : 'transparent';
+  const olMy = document.getElementById('olRadioMy');
+  const olDb = document.getElementById('olRadioDb');
+  if (olMy) olMy.style.background = target === 'my' ? 'var(--rose-deep)' : 'transparent';
+  if (olDb) olDb.style.background = target === 'db' ? 'var(--rose-deep)' : 'transparent';
+
+  updateOverlap();
+  if (document.getElementById('olOverlay')?.classList.contains('open')) olRedraw();
+}
+
+function updateOverlapLabels() {
+  const isDb = overlapEditTarget === 'db';
+  const name = isDb ? t('comparisonPhotoShort') : t('yourScan');
+  const setLbl = (id, prefixKey) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    let valSpan = el.querySelector('.val');
+    if (!valSpan) {
+      valSpan = document.createElement('span');
+      valSpan.className = 'val';
+      if (id === 'opLbl') valSpan.id = 'opVal';
+      if (id === 'xLbl') valSpan.id = 'xVal';
+      if (id === 'yLbl') valSpan.id = 'yVal';
+      if (id === 'scaleLbl') valSpan.id = 'scaleVal';
+      if (id === 'rotLbl') valSpan.id = 'rotVal';
+    }
+    const prefix = t(prefixKey);
+    const langName = currentLang + ':' + name;
+    if (!el.dataset.forName || el.dataset.forName !== langName) {
+      el.textContent = '';
+      el.append(document.createTextNode(`${prefix} ${name} `), valSpan);
+      el.dataset.forName = langName;
+    }
+  };
+  setLbl('opLbl', 'opacity');
+  setLbl('xLbl', 'xPos');
+  setLbl('yLbl', 'yPos');
+  setLbl('scaleLbl', 'scale');
+  setLbl('rotLbl', 'rotation');
+
+  const s = getActiveOverlap();
+  const opVal = document.getElementById('opVal');
+  const xVal = document.getElementById('xVal');
+  const yVal = document.getElementById('yVal');
+  const scaleVal = document.getElementById('scaleVal');
+  const rotVal = document.getElementById('rotVal');
+  if (opVal) opVal.textContent = Math.round(s.opacity) + '%';
+  if (xVal) xVal.textContent = s.x + 'px';
+  if (yVal) yVal.textContent = s.y + 'px';
+  if (scaleVal) scaleVal.textContent = Math.round(s.scale) + '%';
+  if (rotVal) rotVal.textContent = s.rot + '°';
+  const linesLbl = document.getElementById('linesLbl');
+  if (linesLbl) linesLbl.textContent = `${t('linesVisible')} (${name})`;
+}
+
+// ─── Undo/Redo ────────────────────────────────────────────────────────────────
+let undoStack = [];
+let redoStack = [];
+
+function saveSnapshot() {
+  const snap = {
+    annotations: JSON.parse(JSON.stringify(annotations)),
+    textItems: JSON.parse(JSON.stringify(textItems))
+  };
+  undoStack.push(snap);
+  if (undoStack.length > 50) undoStack.shift();
+  redoStack = [];
+  updateUndoButtons();
+}
+
+function undo() {
+  if (!undoStack.length) return;
+  const current = {
+    annotations: JSON.parse(JSON.stringify(annotations)),
+    textItems: JSON.parse(JSON.stringify(textItems))
+  };
+  redoStack.push(current);
+  const snap = undoStack.pop();
+  annotations = snap.annotations;
+  textItems = snap.textItems;
+  selectedAnno = null; fsSelectedAnno = null;
+  updateAnnoList(); redrawMyEcho(); fsRedraw(); updateOverlap();
+  updateUndoButtons();
+}
+
+function redo() {
+  if (!redoStack.length) return;
+  const current = {
+    annotations: JSON.parse(JSON.stringify(annotations)),
+    textItems: JSON.parse(JSON.stringify(textItems))
+  };
+  undoStack.push(current);
+  const snap = redoStack.pop();
+  annotations = snap.annotations;
+  textItems = snap.textItems;
+  selectedAnno = null; fsSelectedAnno = null;
+  updateAnnoList(); redrawMyEcho(); fsRedraw(); updateOverlap();
+  updateUndoButtons();
+}
+
+function updateUndoButtons() {
+  ['undoBtn','fsUndoBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = undoStack.length === 0;
+  });
+  ['redoBtn','fsRedoBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = redoStack.length === 0;
+  });
+}
+
+const myCanvas = document.getElementById('myEchoCanvas');
+const myCtx = myCanvas.getContext('2d');
+const dbCanvas = document.getElementById('dbCanvas');
+const dbCtx = dbCanvas.getContext('2d');
+const overlapCanvas = document.getElementById('overlapCanvas');
+const overlapCtx = overlapCanvas.getContext('2d');
+
+// ─── Week selector init ───────────────────────────────────────────────────────
+(function() {
+  const sel = document.getElementById('selWeek');
+  if (!sel) return;
+  for (let w = 5; w <= 40; w++) {
+    const o = document.createElement('option');
+    o.value = w; o.textContent = `${w}${t('weeks')}`;
+    sel.appendChild(o);
+  }
+})();
+
+// ─── Zoom helpers ─────────────────────────────────────────────────────────────
+function applyZoom() {
+  myCanvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+  document.getElementById('zoomLabel').textContent = Math.round(zoomLevel * 100) + '%';
+}
+
+function zoomIn() {
+  zoomLevel = Math.min(zoomLevel + 0.25, 5);
+  applyZoom();
+}
+
+function zoomOut() {
+  zoomLevel = Math.max(zoomLevel - 0.25, 0.25);
+  applyZoom();
+}
+
+function resetZoom() {
+  zoomLevel = 1; panX = 0; panY = 0;
+  applyZoom();
+}
+
+// Scroll-to-zoom op de canvas wrap
+document.getElementById('myEchoCanvasWrap') && document.addEventListener('DOMContentLoaded', () => {
+  const wrap = document.getElementById('myEchoCanvasWrap');
+  if (wrap) {
+    wrap.querySelector('.canvas-wrap').addEventListener('wheel', e => {
+      if (!myImg) return;
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.15 : 0.15;
+      zoomLevel = Math.min(Math.max(zoomLevel + delta, 0.25), 5);
+      applyZoom();
+    }, { passive: false });
+  }
+});
+
+// ─── Canvas coordinate conversion (accounts for zoom + pan) ──────────────────
+function getPos(e, canvas) {
+  const rect = canvas.getBoundingClientRect();
+  // getBoundingClientRect reflects the CSS transform, so we must inverse
+  const scaleX = canvas.width / (rect.width);
+  const scaleY = canvas.height / (rect.height);
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top) * scaleY
+  };
+}
+
+function isPhoneLayout() {
+  return window.matchMedia('(max-width: 860px)').matches || (('ontouchstart' in window) && window.innerWidth < 1024);
+}
+
+function getScanFitSize() {
+  if (isPhoneLayout()) {
+    const maxW = Math.max(220, Math.min(460, window.innerWidth - 40));
+    const maxH = Math.max(180, Math.min(360, Math.round(window.innerHeight * 0.38)));
+    return { maxW, maxH };
+  }
+  return { maxW: 460, maxH: 340 };
+}
+
+function syncOverlayBodyLock() {
+  const any = document.getElementById('fsOverlay')?.classList.contains('open')
+    || document.getElementById('olOverlay')?.classList.contains('open');
+  document.body.classList.toggle('overlay-open', !!any);
+}
+
+function bindCanvasTouch(target, pinch) {
+  const opts = { passive: false };
+  let pinchStart = null;
+  target.addEventListener('touchstart', e => {
+    if (e.touches.length >= 2 && pinch) {
+      e.preventDefault();
+      pinchStart = {
+        dist: Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY),
+        zoom: pinch.getZoom()
+      };
+      if (pinch.cancelDraw) pinch.cancelDraw();
+      return;
+    }
+    if (e.touches.length !== 1) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    target.dispatchEvent(new MouseEvent('mousedown', {
+      bubbles: true, cancelable: true, view: window,
+      clientX: t.clientX, clientY: t.clientY, button: 0, buttons: 1
+    }));
+  }, opts);
+  target.addEventListener('touchmove', e => {
+    if (e.touches.length >= 2 && pinch && pinchStart) {
+      e.preventDefault();
+      const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      pinch.setZoom(pinchStart.zoom * (dist / Math.max(1, pinchStart.dist)));
+      return;
+    }
+    if (e.touches.length !== 1) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    target.dispatchEvent(new MouseEvent('mousemove', {
+      bubbles: true, cancelable: true, view: window,
+      clientX: t.clientX, clientY: t.clientY, button: 0, buttons: 1
+    }));
+  }, opts);
+  const end = e => {
+    pinchStart = null;
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    if (!t) return;
+    target.dispatchEvent(new MouseEvent('mouseup', {
+      bubbles: true, cancelable: true, view: window,
+      clientX: t.clientX, clientY: t.clientY, button: 0, buttons: 0
+    }));
+  };
+  target.addEventListener('touchend', end, opts);
+  target.addEventListener('touchcancel', end, opts);
+}
+
+// ─── My Echo ─────────────────────────────────────────────────────────────────
+function loadMyEcho(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      myImg = img;
+      const { maxW, maxH } = getScanFitSize();
+      let w = img.width, h = img.height;
+      const r = Math.min(maxW/w, maxH/h, 1);
+      myCanvas.width = w * r;
+      myCanvas.height = h * r;
+      annotations = []; textItems = []; anglePoints = [];
+      zoomLevel = 1; panX = 0; panY = 0;
+      document.getElementById('uploadZone').style.display = 'none';
+      document.getElementById('myEchoCanvasWrap').style.display = 'block';
+      applyZoom();
+      redrawMyEcho();
+      updateOverlap();
+      updateSaveProjectBtn();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetMyEcho() {
+  myImg = null;
+  annotations = []; textItems = []; anglePoints = [];
+  zoomLevel = 1; panX = 0; panY = 0;
+  document.getElementById('uploadZone').style.display = '';
+  document.getElementById('myEchoCanvasWrap').style.display = 'none';
+  document.getElementById('myEchoFile').value = '';
+  updateOverlap();
+  updateSaveProjectBtn();
+}
+
+function toggleFlip(who, dir) {
+  if (who === 'my') {
+    if (dir === 'H') myFlipH = !myFlipH;
+    else myFlipV = !myFlipV;
+    document.getElementById('myFlipHBtn').classList.toggle('active', myFlipH);
+    document.getElementById('myFlipVBtn').classList.toggle('active', myFlipV);
+    redrawMyEcho();
+  } else {
+    if (dir === 'H') dbFlipH = !dbFlipH;
+    else dbFlipV = !dbFlipV;
+    document.getElementById('dbFlipHBtn').classList.toggle('active', dbFlipH);
+    document.getElementById('dbFlipVBtn').classList.toggle('active', dbFlipV);
+    if (dbImg) redrawDb();
+  }
+  updateOverlap();
+}
+
+function redrawDb() {
+  if (!dbImg) return;
+  const { maxW, maxH } = getScanFitSize();
+  const r = Math.min(maxW / dbImg.width, maxH / dbImg.height, 1);
+  dbCanvas.width = dbImg.width * r;
+  dbCanvas.height = dbImg.height * r;
+  dbCtx.clearRect(0, 0, dbCanvas.width, dbCanvas.height);
+  dbCtx.save();
+  dbCtx.translate(dbFlipH ? dbCanvas.width : 0, dbFlipV ? dbCanvas.height : 0);
+  dbCtx.scale(dbFlipH ? -1 : 1, dbFlipV ? -1 : 1);
+  dbCtx.drawImage(dbImg, 0, 0, dbCanvas.width, dbCanvas.height);
+  dbCtx.restore();
+  dbAnnotations.forEach(a => { if (!a.hidden) drawAnnotation(dbCtx, a); });
+  dbTextItems.forEach(t => { if (!t.hidden) drawTextItem(dbCtx, t); });
+  if (dbSelectedAnno) drawSelectionHandle(dbCtx, dbSelectedAnno);
+  if (dbAnglePoints.length === 1) {
+    dbCtx.beginPath();
+    dbCtx.arc(dbAnglePoints[0].x, dbAnglePoints[0].y, 5, 0, Math.PI*2);
+    dbCtx.fillStyle = dbDrawColor;
+    dbCtx.fill();
+  } else if (dbAnglePoints.length === 2) {
+    drawAngleLines(dbCtx, dbAnglePoints[0], dbAnglePoints[1], null, dbDrawColor, true);
+  }
+}
+function redrawMyEcho() {
+  if (!myImg) return;
+  myCtx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+  myCtx.save();
+  myCtx.translate(myFlipH ? myCanvas.width : 0, myFlipV ? myCanvas.height : 0);
+  myCtx.scale(myFlipH ? -1 : 1, myFlipV ? -1 : 1);
+  myCtx.drawImage(myImg, 0, 0, myCanvas.width, myCanvas.height);
+  myCtx.restore();
+  annotations.forEach(a => drawAnnotation(myCtx, a));
+  textItems.forEach(t => drawTextItem(myCtx, t));
+
+  // Highlight selected annotation
+  if (selectedAnno) {
+    drawSelectionHandle(myCtx, selectedAnno);
+  }
+
+  if (anglePoints.length === 1) {
+    myCtx.beginPath();
+    myCtx.arc(anglePoints[0].x, anglePoints[0].y, 5, 0, Math.PI*2);
+    myCtx.fillStyle = drawColor;
+    myCtx.fill();
+  } else if (anglePoints.length === 2) {
+    drawAngleLines(myCtx, anglePoints[0], anglePoints[1], null, drawColor, true);
+  }
+}
+
+function drawSelectionHandle(ctx, a) {
+  ctx.save();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 3]);
+  if (a.type === 'line') {
+    const pad = 6;
+    ctx.strokeRect(
+      Math.min(a.x1, a.x2) - pad, Math.min(a.y1, a.y2) - pad,
+      Math.abs(a.x2 - a.x1) + pad*2, Math.abs(a.y2 - a.y1) + pad*2
+    );
+  } else if (a.type === 'angle') {
+    const xs = [a.p0.x, a.p1.x, a.p2.x];
+    const ys = [a.p0.y, a.p1.y, a.p2.y];
+    const pad = 8;
+    ctx.strokeRect(Math.min(...xs)-pad, Math.min(...ys)-pad, Math.max(...xs)-Math.min(...xs)+pad*2, Math.max(...ys)-Math.min(...ys)+pad*2);
+  } else if (a.type === 'draw') {
+    const xs = a.pts.map(p=>p.x), ys = a.pts.map(p=>p.y);
+    const pad = 6;
+    ctx.strokeRect(Math.min(...xs)-pad, Math.min(...ys)-pad, Math.max(...xs)-Math.min(...xs)+pad*2, Math.max(...ys)-Math.min(...ys)+pad*2);
+  } else if (a.text) {
+    ctx.strokeRect(a.x - 4, a.y - 18, a.text.length * 8 + 8, 22);
+  }
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawAnnotation(ctx, a) {
+  if (a.hidden) return;
+  ctx.strokeStyle = a.color;
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  if (a.type === 'line') {
+    ctx.beginPath();
+    ctx.setLineDash([]);
+    ctx.moveTo(a.x1, a.y1);
+    ctx.lineTo(a.x2, a.y2);
+    ctx.stroke();
+    const dx = a.x2 - a.x1, dy = a.y2 - a.y1;
+    const px = Math.round(Math.sqrt(dx*dx + dy*dy));
+    const mx = (a.x1+a.x2)/2, my = (a.y1+a.y2)/2;
+    ctx.font = 'bold 12px DM Sans, sans-serif';
+    ctx.fillStyle = a.color;
+    ctx.fillText(px + 'px', mx+4, my-4);
+    [a.x1,a.y1,a.x2,a.y2].forEach((v,i,arr) => {
+      if (i%2===0) { ctx.beginPath(); ctx.arc(arr[i],arr[i+1],4,0,Math.PI*2); ctx.fill(); }
+    });
+  } else if (a.type === 'draw') {
+    ctx.beginPath();
+    ctx.setLineDash([]);
+    a.pts.forEach((p, i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+    ctx.stroke();
+  } else if (a.type === 'angle') {
+    drawAngleLines(ctx, a.p0, a.p1, a.p2, a.color, false, a.angle);
+  }
+}
+
+function drawAngleLines(ctx, p0, p1, p2, color, partial, angle) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6,3]);
+  ctx.beginPath();
+  ctx.moveTo(p0.x, p0.y);
+  ctx.lineTo(p1.x, p1.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  if (!partial && p2) {
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.stroke();
+    ctx.font = 'bold 13px DM Sans, sans-serif';
+    ctx.fillStyle = color;
+    ctx.fillText(angle.toFixed(1)+'°', p1.x+8, p1.y-8);
+  }
+  [p0,p1,p2].filter(Boolean).forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  });
+}
+
+function drawTextItem(ctx, t) {
+  if (t.hidden) return;
+  ctx.font = `${t.size||14}px DM Sans, sans-serif`;
+  ctx.fillStyle = t.color;
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  ctx.lineWidth = 3;
+  ctx.strokeText(t.text, t.x, t.y);
+  ctx.fillText(t.text, t.x, t.y);
+}
+
+// ─── Hit testing for select tool ──────────────────────────────────────────────
+// Returns { item, type, pointKey } where pointKey is which handle was hit
+function hitTest(x, y) {
+  const R = 10; // handle hit radius
+
+  // Text items
+  for (let i = textItems.length - 1; i >= 0; i--) {
+    const t = textItems[i];
+    if (x >= t.x - 4 && x <= t.x + t.text.length * 8 + 4 && y >= t.y - 18 && y <= t.y + 4) {
+      return { item: t, type: 'text', pointKey: 'pos' };
+    }
+  }
+
+  // Annotation handles (points first, then body)
+  for (let i = annotations.length - 1; i >= 0; i--) {
+    const a = annotations[i];
+
+    if (a.type === 'line') {
+      if (Math.hypot(x - a.x1, y - a.y1) < R) return { item: a, type: 'anno', pointKey: 'p1' };
+      if (Math.hypot(x - a.x2, y - a.y2) < R) return { item: a, type: 'anno', pointKey: 'p2' };
+      if (distToSegment(x, y, a.x1, a.y1, a.x2, a.y2) < 8) return { item: a, type: 'anno', pointKey: 'body' };
+    }
+
+    if (a.type === 'angle') {
+      if (Math.hypot(x - a.p0.x, y - a.p0.y) < R) return { item: a, type: 'anno', pointKey: 'p0' };
+      if (Math.hypot(x - a.p1.x, y - a.p1.y) < R) return { item: a, type: 'anno', pointKey: 'p1' };
+      if (Math.hypot(x - a.p2.x, y - a.p2.y) < R) return { item: a, type: 'anno', pointKey: 'p2' };
+      if (distToSegment(x,y,a.p0.x,a.p0.y,a.p1.x,a.p1.y) < 8) return { item: a, type: 'anno', pointKey: 'body' };
+      if (distToSegment(x,y,a.p1.x,a.p1.y,a.p2.x,a.p2.y) < 8) return { item: a, type: 'anno', pointKey: 'body' };
+    }
+
+    if (a.type === 'draw') {
+      const xs = a.pts.map(p=>p.x), ys = a.pts.map(p=>p.y);
+      const bx = Math.min(...xs), by = Math.min(...ys), bw = Math.max(...xs)-bx, bh = Math.max(...ys)-by;
+      if (x >= bx-8 && x <= bx+bw+8 && y >= by-8 && y <= by+bh+8) return { item: a, type: 'anno', pointKey: 'body' };
+    }
+  }
+
+  return null;
+}
+
+function distToSegment(px, py, x1, y1, x2, y2) {
+  const dx = x2-x1, dy = y2-y1;
+  const len2 = dx*dx + dy*dy;
+  if (len2 === 0) return Math.hypot(px-x1, py-y1);
+  let t = ((px-x1)*dx + (py-y1)*dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (x1+t*dx), py - (y1+t*dy));
+}
+
+function moveAnno(item, pointKey, dx, dy) {
+  if (item.text !== undefined) {
+    item.x += dx; item.y += dy;
+    return;
+  }
+
+  if (item.type === 'line') {
+    if (pointKey === 'p1') { item.x1 += dx; item.y1 += dy; }
+    else if (pointKey === 'p2') { item.x2 += dx; item.y2 += dy; }
+    else { item.x1+=dx; item.y1+=dy; item.x2+=dx; item.y2+=dy; }
+    // Recalc live measurement (stored as px, display only — nothing to store)
+  }
+
+  if (item.type === 'angle') {
+    if (pointKey === 'p0') { item.p0.x += dx; item.p0.y += dy; }
+    else if (pointKey === 'p1') { item.p1.x += dx; item.p1.y += dy; }
+    else if (pointKey === 'p2') { item.p2.x += dx; item.p2.y += dy; }
+    else { [item.p0, item.p1, item.p2].forEach(p => { p.x+=dx; p.y+=dy; }); }
+    // Recalc angle live
+    item.angle = calcAngle(item.p0, item.p1, item.p2);
+    document.getElementById('angleDisplay').textContent = item.angle.toFixed(1) + '°';
+  }
+
+  if (item.type === 'draw') {
+    item.pts.forEach(p => { p.x+=dx; p.y+=dy; });
+  }
+}
+
+// ─── Tool management ──────────────────────────────────────────────────────────
+function setTool(t) {
+  tool = t;
+  ['btnLine','btnAngle','btnDraw','btnText','btnSelect'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('active', id === 'btn' + t.charAt(0).toUpperCase() + t.slice(1));
+  });
+
+  if (t === 'select') {
+    myCanvas.style.cursor = 'default';
+  } else {
+    myCanvas.style.cursor = 'crosshair';
+    selectedAnno = null;
+    redrawMyEcho();
+  }
+
+  if (t !== 'angle') anglePoints = [];
+  document.getElementById('angleDisplay').textContent = '';
+  freePoints = [];
+}
+
+function setColor(el) {
+  document.querySelectorAll('#myEchoCanvasWrap .color-swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  drawColor = el.dataset.c;
+  if (selectedAnno) {
+    selectedAnno.color = drawColor;
+    redrawMyEcho();
+    updateOverlap();
+  }
+}
+
+// ─── Canvas events ────────────────────────────────────────────────────────────
+myCanvas.addEventListener('mousedown', e => {
+  if (!myImg) return;
+  const {x, y} = getPos(e, myCanvas);
+
+if (tool === 'select') {
+    const hit = hitTest(x, y);
+    if (hit) {
+      selectedAnno = hit.item;
+      selectedPointKey = hit.pointKey;
+      isDragging = true;
+      dragOffX = x;
+      dragOffY = y;
+      myCanvas.style.cursor = hit.pointKey === 'body' ? 'grabbing' : 'crosshair';
+    } else {
+      selectedAnno = null;
+      // Middle button or space = pan; plain click on empty = deselect
+      isPanning = true;
+      panStartX = e.clientX;
+      panStartY = e.clientY;
+      panStartPanX = panX;
+      panStartPanY = panY;
+      myCanvas.style.cursor = 'grab';
+    }
+    redrawMyEcho();
+    return;
+  }
+
+  if (tool === 'text') {
+    pendingTextPos = {x, y};
+    const inp = document.getElementById('textInput');
+    inp.style.display = 'block';
+    inp.style.left = (e.offsetX + 2) + 'px';
+    inp.style.top = (e.offsetY - 20) + 'px';
+    inp.value = '';
+    inp.focus();
+    return;
+  }
+
+  if (tool === 'angle') {
+    anglePoints.push({x, y});
+    if (anglePoints.length === 3) {
+      const angle = calcAngle(anglePoints[0], anglePoints[1], anglePoints[2]);
+      saveSnapshot();
+      annotations.push({type:'angle', p0:anglePoints[0], p1:anglePoints[1], p2:anglePoints[2], color:drawColor, angle});
+      document.getElementById('angleDisplay').textContent = angle.toFixed(1)+'°';
+      updateAnnoList();
+      anglePoints = [];
+      redrawMyEcho();
+    } else {
+      redrawMyEcho();
+    }
+    return;
+  }
+
+if (tool === 'line') {
+    if (!isDrawing) {
+      isDrawing = true;
+      startX = x; startY = y;
+    } else {
+      isDrawing = false;
+      saveSnapshot();
+      annotations.push({type:'line', x1:startX, y1:startY, x2:x, y2:y, color:drawColor});
+      updateAnnoList();
+      redrawMyEcho();
+      updateOverlap();
+    }
+    return;
+  }
+
+  isDrawing = true;
+  startX = x; startY = y;
+  if (tool === 'draw') freePoints = [{x, y}];
+});
+
+myCanvas.addEventListener('mousemove', e => {
+  if (!myImg) return;
+  const {x, y} = getPos(e, myCanvas);
+
+  // Select tool: drag annotation or pan
+  if (tool === 'select') {
+if (isDragging && selectedAnno) {
+      const dx = x - dragOffX, dy = y - dragOffY;
+      moveAnno(selectedAnno, selectedPointKey, dx, dy);
+      dragOffX = x; dragOffY = y;
+      redrawMyEcho();
+      updateOverlap();
+    } else if (isPanning) {
+      panX = panStartPanX + (e.clientX - panStartX);
+      panY = panStartPanY + (e.clientY - panStartY);
+      applyZoom();
+    } else {
+      // Hover cursor hint
+const hit = hitTest(x, y);
+      if (!hit) myCanvas.style.cursor = 'default';
+      else if (hit.pointKey === 'body') myCanvas.style.cursor = 'grab';
+      else myCanvas.style.cursor = 'crosshair'; // handle = resize cursor
+    }
+    return;
+  }
+
+  if (!isDrawing) return;
+
+  if (tool === 'draw') {
+    freePoints.push({x, y});
+    redrawMyEcho();
+    myCtx.strokeStyle = drawColor;
+    myCtx.lineWidth = 2;
+    myCtx.beginPath();
+    freePoints.forEach((p, i) => i===0 ? myCtx.moveTo(p.x,p.y) : myCtx.lineTo(p.x,p.y));
+    myCtx.stroke();
+  } else if (tool === 'line') {
+    redrawMyEcho();
+    myCtx.strokeStyle = drawColor;
+    myCtx.lineWidth = 2;
+    myCtx.setLineDash([]);
+    myCtx.beginPath();
+    myCtx.moveTo(startX, startY);
+    myCtx.lineTo(x, y);
+    myCtx.stroke();
+    const dx=x-startX, dy=y-startY;
+    myCtx.font='bold 12px DM Sans,sans-serif';
+    myCtx.fillStyle=drawColor;
+    myCtx.fillText(Math.round(Math.sqrt(dx*dx+dy*dy))+'px',(startX+x)/2+4,(startY+y)/2-4);
+  }
+});
+
+myCanvas.addEventListener('mouseup', e => {
+  if (!myImg) return;
+
+  if (tool === 'select') {
+    isDragging = false;
+    isPanning = false;
+    myCanvas.style.cursor = selectedAnno ? 'grab' : 'default';
+    updateAnnoList();
+    return;
+  }
+
+  if (!isDrawing) return;
+  const {x, y} = getPos(e, myCanvas);
+
+  // Lijn gebruikt klik-klik, niet mouseup
+  if (tool === 'line') return;
+
+  isDrawing = false;
+
+if (tool === 'draw') {
+    saveSnapshot();
+    annotations.push({type:'draw', pts:[...freePoints], color:drawColor});
+    freePoints = [];
+    updateAnnoList();
+  }
+  redrawMyEcho();
+  updateOverlap();
+});
+
+// Scroll to zoom
+myCanvas.addEventListener('wheel', e => {
+  if (!myImg) return;
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? -0.15 : 0.15;
+  zoomLevel = Math.min(Math.max(zoomLevel + delta, 0.25), 5);
+  applyZoom();
+}, { passive: false });
+
+bindCanvasTouch(myCanvas, {
+  getZoom: () => zoomLevel,
+  setZoom: z => { zoomLevel = Math.min(Math.max(z, 0.25), 5); applyZoom(); },
+  cancelDraw: () => { isDrawing = false; isDragging = false; isPanning = false; }
+});
+
+function commitText(e) {
+  if (e.key === 'Enter' || e.key === 'Escape') {
+    const inp = document.getElementById('textInput');
+    if (e.key === 'Enter' && inp.value.trim() && pendingTextPos) {
+      saveSnapshot();
+      textItems.push({text: inp.value.trim(), x: pendingTextPos.x, y: pendingTextPos.y, color: drawColor, size: 14});
+      updateAnnoList();
+      redrawMyEcho();
+      updateOverlap();
+    }
+    inp.style.display = 'none';
+    inp.value = '';
+    pendingTextPos = null;
+  }
+}
+
+function calcAngle(p0, pivot, p2) {
+  const a1 = Math.atan2(p0.y - pivot.y, p0.x - pivot.x);
+  const a2 = Math.atan2(p2.y - pivot.y, p2.x - pivot.x);
+  let deg = Math.abs((a2 - a1) * 180 / Math.PI);
+  if (deg > 180) deg = 360 - deg;
+  return deg;
+}
+
+function updateAnnoList() {
+  const list = document.getElementById('annoList');
+  const all = [...annotations, ...textItems];
+  if (!all.length) { list.innerHTML = ''; return; }
+  list.innerHTML = all.map((a, i) => {
+    const isSelected = a === selectedAnno;
+    const label = a.type === 'line' ? `📏 ${t('annoLine')} ${Math.round(Math.sqrt((a.x2-a.x1)**2+(a.y2-a.y1)**2))}px`
+      : a.type === 'angle' ? `📐 ${t('annoAngle')} ${a.angle.toFixed(1)}°`
+      : a.type === 'draw' ? `✏️ ${t('annoPerimeter')}`
+      : `T "${a.text}"`;
+    const eyeIcon = a.hidden ? '👁' : '👁';
+return `<div class="anno-item" style="${isSelected ? 'background:var(--rose-pale)' : ''}${a.hidden ? ';opacity:0.45' : ''}" onclick="selectAnnoByIndex(${i})">
+      <span>${label}</span>
+      <div style="display:flex;gap:7px;margin-left:auto">
+        <button title="${t('toggleVisibility')}" onclick="event.stopPropagation();toggleAnnoVisibility(${i})">` + eyeIcon + `</button>
+        <button onclick="event.stopPropagation();removeAnno(${i})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleAnnoVisibility(i) {
+  const all = [...annotations, ...textItems];
+  const item = all[i];
+  if (!item) return;
+  item.hidden = !item.hidden;
+  updateAnnoList();
+  redrawMyEcho();
+  fsRedraw();
+  updateOverlap();
+}
+function selectAnnoByIndex(i) {
+  const all = [...annotations, ...textItems];
+  selectedAnno = all[i] || null;
+  setTool('select');
+  redrawMyEcho();
+  updateAnnoList();
+}
+
+function removeAnno(i) {
+  const all = [...annotations, ...textItems];
+  const item = all[i];
+  if (item === selectedAnno) selectedAnno = null;
+  saveSnapshot();
+  if (item.text !== undefined) textItems = textItems.filter(t => t !== item);
+  else annotations = annotations.filter(a => a !== item);
+  updateAnnoList();
+  redrawMyEcho();
+  updateOverlap();
+}
+
+function clearAnnotations() {
+  saveSnapshot();
+  annotations = []; textItems = []; anglePoints = []; selectedAnno = null;
+  document.getElementById('angleDisplay').textContent = '';
+  updateAnnoList();
+  redrawMyEcho();
+  updateOverlap();
+}
+function deleteSelected() {
+  if (!selectedAnno) return;
+  saveSnapshot();
+  if (selectedAnno.text !== undefined) {
+    textItems = textItems.filter(t => t !== selectedAnno);
+  } else {
+    annotations = annotations.filter(a => a !== selectedAnno);
+  }
+  selectedAnno = null;
+  updateAnnoList();
+  redrawMyEcho();
+  updateOverlap();
+}
+function saveMyEcho() {
+  const link = document.createElement('a');
+  link.download = 'mijn-echo.png';
+  link.href = myCanvas.toDataURL();
+  link.click();
+}
+
+function saveProject() {
+  if (!myImg) { alert(t('loadScanFirst')); return; }
+  const project = {
+    version: 1,
+    savedAt: new Date().toISOString(),
+    imageDataURL: myImg.src,
+    canvasWidth: myCanvas.width,
+    canvasHeight: myCanvas.height,
+    flipH: myFlipH,
+    flipV: myFlipV,
+    annotations: JSON.parse(JSON.stringify(annotations)),
+    textItems: JSON.parse(JSON.stringify(textItems))
+  };
+  const json = JSON.stringify(project, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.download = 'echo-project-' + new Date().toISOString().slice(0,10) + '.json';
+  link.href = url;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function loadProject(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const project = JSON.parse(ev.target.result);
+      if (!project.version || !project.imageDataURL) {
+        alert(t('invalidProject'));
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        myImg = img;
+        myCanvas.width = project.canvasWidth || img.width;
+        myCanvas.height = project.canvasHeight || img.height;
+        annotations = project.annotations || [];
+        textItems = project.textItems || [];
+        myFlipH = project.flipH || false;
+        myFlipV = project.flipV || false;
+        document.getElementById('myFlipHBtn').classList.toggle('active', myFlipH);
+        document.getElementById('myFlipVBtn').classList.toggle('active', myFlipV);
+        anglePoints = []; selectedAnno = null; fsSelectedAnno = null;
+        undoStack = []; redoStack = [];
+        zoomLevel = 1; panX = 0; panY = 0;
+        document.getElementById('uploadZone').style.display = 'none';
+        document.getElementById('myEchoCanvasWrap').style.display = 'block';
+        applyZoom();
+        redrawMyEcho();
+        updateAnnoList();
+        updateOverlap();
+        updateUndoButtons();
+        updateSaveProjectBtn();
+      };
+      img.onerror = () => alert(t('projectImageError'));
+      img.src = project.imageDataURL;
+    } catch (err) {
+      alert(t('projectLoadError') + err.message);
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ─── Comparison photo tools ───────────────────────────────────────────────────
+function applyDbZoom() {
+  dbCanvas.style.transform = `translate(${dbPanX}px, ${dbPanY}px) scale(${dbZoomLevel})`;
+  const lbl = document.getElementById('dbZoomLabel');
+  if (lbl) lbl.textContent = Math.round(dbZoomLevel * 100) + '%';
+}
+function dbZoomIn() { dbZoomLevel = Math.min(dbZoomLevel + 0.25, 5); applyDbZoom(); }
+function dbZoomOut() { dbZoomLevel = Math.max(dbZoomLevel - 0.25, 0.25); applyDbZoom(); }
+function dbResetZoom() { dbZoomLevel = 1; dbPanX = 0; dbPanY = 0; applyDbZoom(); }
+
+function setDbTool(t) {
+  dbTool = t;
+  ['dbBtnLine','dbBtnAngle','dbBtnDraw','dbBtnText','dbBtnSelect'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const suffix = t.charAt(0).toUpperCase() + t.slice(1);
+    el.classList.toggle('active', id === 'dbBtn' + suffix);
+  });
+  if (dbTool === 'select') dbCanvas.style.cursor = 'default';
+  else {
+    dbCanvas.style.cursor = 'crosshair';
+    dbSelectedAnno = null;
+    redrawDb();
+  }
+  if (t !== 'angle') dbAnglePoints = [];
+  const ad = document.getElementById('dbAngleDisplay');
+  if (ad) ad.textContent = '';
+  dbFreePoints = [];
+}
+
+function setDbColor(el) {
+  document.querySelectorAll('.db-color-swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  dbDrawColor = el.dataset.c;
+  if (dbSelectedAnno) {
+    dbSelectedAnno.color = dbDrawColor;
+    redrawDb();
+    updateOverlap();
+  }
+}
+
+function saveDbSnapshot() {
+  dbUndoStack.push({
+    annotations: JSON.parse(JSON.stringify(dbAnnotations)),
+    textItems: JSON.parse(JSON.stringify(dbTextItems))
+  });
+  if (dbUndoStack.length > 50) dbUndoStack.shift();
+  dbRedoStack = [];
+  updateDbUndoButtons();
+}
+function dbUndo() {
+  if (!dbUndoStack.length) return;
+  dbRedoStack.push({
+    annotations: JSON.parse(JSON.stringify(dbAnnotations)),
+    textItems: JSON.parse(JSON.stringify(dbTextItems))
+  });
+  const snap = dbUndoStack.pop();
+  dbAnnotations = snap.annotations;
+  dbTextItems = snap.textItems;
+  dbSelectedAnno = null;
+  updateDbAnnoList(); redrawDb(); updateOverlap(); updateDbUndoButtons();
+}
+function dbRedo() {
+  if (!dbRedoStack.length) return;
+  dbUndoStack.push({
+    annotations: JSON.parse(JSON.stringify(dbAnnotations)),
+    textItems: JSON.parse(JSON.stringify(dbTextItems))
+  });
+  const snap = dbRedoStack.pop();
+  dbAnnotations = snap.annotations;
+  dbTextItems = snap.textItems;
+  dbSelectedAnno = null;
+  updateDbAnnoList(); redrawDb(); updateOverlap(); updateDbUndoButtons();
+}
+function updateDbUndoButtons() {
+  const u = document.getElementById('dbUndoBtn');
+  const r = document.getElementById('dbRedoBtn');
+  if (u) u.disabled = dbUndoStack.length === 0;
+  if (r) r.disabled = dbRedoStack.length === 0;
+}
+
+function hitTestDb(x, y) {
+  const R = 10;
+  for (let i = dbTextItems.length - 1; i >= 0; i--) {
+    const tItem = dbTextItems[i];
+    if (x >= tItem.x - 4 && x <= tItem.x + tItem.text.length * 8 + 4 && y >= tItem.y - 18 && y <= tItem.y + 4) {
+      return { item: tItem, type: 'text', pointKey: 'pos' };
+    }
+  }
+  for (let i = dbAnnotations.length - 1; i >= 0; i--) {
+    const a = dbAnnotations[i];
+    if (a.type === 'line') {
+      if (Math.hypot(x - a.x1, y - a.y1) < R) return { item: a, type: 'anno', pointKey: 'p1' };
+      if (Math.hypot(x - a.x2, y - a.y2) < R) return { item: a, type: 'anno', pointKey: 'p2' };
+      if (distToSegment(x, y, a.x1, a.y1, a.x2, a.y2) < 8) return { item: a, type: 'anno', pointKey: 'body' };
+    }
+    if (a.type === 'angle') {
+      if (Math.hypot(x - a.p0.x, y - a.p0.y) < R) return { item: a, type: 'anno', pointKey: 'p0' };
+      if (Math.hypot(x - a.p1.x, y - a.p1.y) < R) return { item: a, type: 'anno', pointKey: 'p1' };
+      if (Math.hypot(x - a.p2.x, y - a.p2.y) < R) return { item: a, type: 'anno', pointKey: 'p2' };
+      if (distToSegment(x,y,a.p0.x,a.p0.y,a.p1.x,a.p1.y) < 8) return { item: a, type: 'anno', pointKey: 'body' };
+      if (distToSegment(x,y,a.p1.x,a.p1.y,a.p2.x,a.p2.y) < 8) return { item: a, type: 'anno', pointKey: 'body' };
+    }
+    if (a.type === 'draw') {
+      const xs = a.pts.map(p=>p.x), ys = a.pts.map(p=>p.y);
+      const bx = Math.min(...xs), by = Math.min(...ys), bw = Math.max(...xs)-bx, bh = Math.max(...ys)-by;
+      if (x >= bx-8 && x <= bx+bw+8 && y >= by-8 && y <= by+bh+8) return { item: a, type: 'anno', pointKey: 'body' };
+    }
+  }
+  return null;
+}
+
+function updateDbAnnoList() {
+  const list = document.getElementById('dbAnnoList');
+  if (!list) return;
+  const all = [...dbAnnotations, ...dbTextItems];
+  if (!all.length) { list.innerHTML = ''; return; }
+  list.innerHTML = all.map((a, i) => {
+    const isSelected = a === dbSelectedAnno;
+    const label = a.type === 'line' ? `📏 ${t('annoLine')} ${Math.round(Math.sqrt((a.x2-a.x1)**2+(a.y2-a.y1)**2))}px`
+      : a.type === 'angle' ? `📐 ${t('annoAngle')} ${a.angle.toFixed(1)}°`
+      : a.type === 'draw' ? `✏️ ${t('annoPerimeter')}`
+      : `T "${a.text}"`;
+    return `<div class="anno-item" style="${isSelected ? 'background:var(--rose-pale)' : ''}${a.hidden ? ';opacity:0.45' : ''}" onclick="selectDbAnnoByIndex(${i})">
+      <span>${label}</span>
+      <div style="display:flex;gap:7px;margin-left:auto">
+        <button title="${t('toggleVisibility')}" onclick="event.stopPropagation();toggleDbAnnoVisibility(${i})">👁</button>
+        <button onclick="event.stopPropagation();removeDbAnno(${i})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectDbAnnoByIndex(i) {
+  const all = [...dbAnnotations, ...dbTextItems];
+  dbSelectedAnno = all[i] || null;
+  setDbTool('select');
+  redrawDb();
+  updateDbAnnoList();
+}
+function toggleDbAnnoVisibility(i) {
+  const all = [...dbAnnotations, ...dbTextItems];
+  if (!all[i]) return;
+  all[i].hidden = !all[i].hidden;
+  updateDbAnnoList(); redrawDb(); updateOverlap();
+}
+function removeDbAnno(i) {
+  const all = [...dbAnnotations, ...dbTextItems];
+  const item = all[i];
+  if (!item) return;
+  saveDbSnapshot();
+  if (item.text !== undefined) dbTextItems = dbTextItems.filter(x => x !== item);
+  else dbAnnotations = dbAnnotations.filter(x => x !== item);
+  if (dbSelectedAnno === item) dbSelectedAnno = null;
+  updateDbAnnoList(); redrawDb(); updateOverlap();
+}
+function deleteDbSelected() {
+  if (!dbSelectedAnno) return;
+  saveDbSnapshot();
+  if (dbSelectedAnno.text !== undefined) dbTextItems = dbTextItems.filter(x => x !== dbSelectedAnno);
+  else dbAnnotations = dbAnnotations.filter(x => x !== dbSelectedAnno);
+  dbSelectedAnno = null;
+  updateDbAnnoList(); redrawDb(); updateOverlap();
+}
+
+function saveDbEcho() {
+  if (!dbImg) return;
+  const link = document.createElement('a');
+  link.download = 'comparison-photo.png';
+  link.href = dbCanvas.toDataURL();
+  link.click();
+}
+
+function openDbFullscreen() {
+  if (!dbImg) return;
+  // Reuse annotation fullscreen by temporarily swapping into my canvas viewer is complex;
+  // open a dedicated simple fullscreen using the overlap-style overlay on the db canvas wrap.
+  const wrap = document.getElementById('dbPreviewWrap');
+  if (!wrap) return;
+  if (!document.fullscreenElement) {
+    (wrap.requestFullscreen || wrap.webkitRequestFullscreen || wrap.msRequestFullscreen)?.call(wrap);
+  } else {
+    (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen)?.call(document);
+  }
+}
+
+function commitDbText(e) {
+  if (e.key !== 'Enter') return;
+  const inp = document.getElementById('dbTextInput');
+  const val = inp.value.trim();
+  inp.style.display = 'none';
+  if (!val || !dbPendingTextPos) return;
+  saveDbSnapshot();
+  dbTextItems.push({ text: val, x: dbPendingTextPos.x, y: dbPendingTextPos.y, color: dbDrawColor, size: 14 });
+  dbPendingTextPos = null;
+  updateDbAnnoList(); redrawDb(); updateOverlap();
+}
+
+// db canvas interactions
+dbCanvas.addEventListener('mousedown', e => {
+  if (!dbImg) return;
+  const {x, y} = getPos(e, dbCanvas);
+  if (dbTool === 'select') {
+    const hit = hitTestDb(x, y);
+    if (hit) {
+      dbSelectedAnno = hit.item;
+      dbSelectedPointKey = hit.pointKey;
+      dbIsDragging = true;
+      dbDragOffX = x; dbDragOffY = y;
+    } else dbSelectedAnno = null;
+    redrawDb(); updateDbAnnoList();
+    return;
+  }
+  if (dbTool === 'text') {
+    dbPendingTextPos = {x, y};
+    const inp = document.getElementById('dbTextInput');
+    inp.style.display = 'block';
+    inp.style.left = (e.offsetX + 2) + 'px';
+    inp.style.top = (e.offsetY - 20) + 'px';
+    inp.value = '';
+    inp.focus();
+    return;
+  }
+  if (dbTool === 'angle') {
+    dbAnglePoints.push({x, y});
+    if (dbAnglePoints.length === 3) {
+      const angle = calcAngle(dbAnglePoints[0], dbAnglePoints[1], dbAnglePoints[2]);
+      saveDbSnapshot();
+      dbAnnotations.push({type:'angle', p0:dbAnglePoints[0], p1:dbAnglePoints[1], p2:dbAnglePoints[2], color:dbDrawColor, angle});
+      document.getElementById('dbAngleDisplay').textContent = angle.toFixed(1)+'°';
+      updateDbAnnoList();
+      dbAnglePoints = [];
+      redrawDb(); updateOverlap();
+    } else redrawDb();
+    return;
+  }
+  if (dbTool === 'line') {
+    if (!dbIsDrawing) {
+      dbIsDrawing = true;
+      dbStartX = x; dbStartY = y;
+    } else {
+      dbIsDrawing = false;
+      saveDbSnapshot();
+      dbAnnotations.push({type:'line', x1:dbStartX, y1:dbStartY, x2:x, y2:y, color:dbDrawColor});
+      updateDbAnnoList(); redrawDb(); updateOverlap();
+    }
+    return;
+  }
+  dbIsDrawing = true;
+  dbStartX = x; dbStartY = y;
+  if (dbTool === 'draw') dbFreePoints = [{x, y}];
+});
+
+dbCanvas.addEventListener('mousemove', e => {
+  if (!dbImg) return;
+  const {x, y} = getPos(e, dbCanvas);
+  if (dbTool === 'select') {
+    if (dbIsDragging && dbSelectedAnno) {
+      moveAnno(dbSelectedAnno, dbSelectedPointKey, x - dbDragOffX, y - dbDragOffY);
+      dbDragOffX = x; dbDragOffY = y;
+      if (dbSelectedAnno.type === 'angle') {
+        document.getElementById('dbAngleDisplay').textContent = dbSelectedAnno.angle.toFixed(1) + '°';
+      }
+      redrawDb(); updateOverlap();
+    }
+    return;
+  }
+  if (!dbIsDrawing) return;
+  if (dbTool === 'draw') {
+    dbFreePoints.push({x, y});
+    redrawDb();
+    dbCtx.strokeStyle = dbDrawColor;
+    dbCtx.lineWidth = 2;
+    dbCtx.beginPath();
+    dbFreePoints.forEach((p, i) => i===0 ? dbCtx.moveTo(p.x,p.y) : dbCtx.lineTo(p.x,p.y));
+    dbCtx.stroke();
+  } else if (dbTool === 'line') {
+    redrawDb();
+    dbCtx.strokeStyle = dbDrawColor;
+    dbCtx.lineWidth = 2;
+    dbCtx.beginPath();
+    dbCtx.moveTo(dbStartX, dbStartY);
+    dbCtx.lineTo(x, y);
+    dbCtx.stroke();
+    const dx=x-dbStartX, dy=y-dbStartY;
+    dbCtx.font='bold 12px DM Sans,sans-serif';
+    dbCtx.fillStyle=dbDrawColor;
+    dbCtx.fillText(Math.round(Math.sqrt(dx*dx+dy*dy))+'px',(dbStartX+x)/2+4,(dbStartY+y)/2-4);
+  }
+});
+
+dbCanvas.addEventListener('mouseup', e => {
+  if (!dbImg) return;
+  if (dbTool === 'select') {
+    dbIsDragging = false;
+    return;
+  }
+  if (dbTool === 'draw' && dbIsDrawing) {
+    dbIsDrawing = false;
+    if (dbFreePoints.length > 1) {
+      saveDbSnapshot();
+      dbAnnotations.push({type:'draw', pts: dbFreePoints.slice(), color: dbDrawColor});
+      updateDbAnnoList(); redrawDb(); updateOverlap();
+    }
+    dbFreePoints = [];
+  }
+});
+dbCanvas.addEventListener('mouseleave', () => { dbIsDragging = false; });
+bindCanvasTouch(dbCanvas, {
+  getZoom: () => dbZoomLevel,
+  setZoom: z => { dbZoomLevel = Math.min(Math.max(z, 0.25), 5); applyDbZoom(); },
+  cancelDraw: () => { dbIsDrawing = false; dbIsDragging = false; }
+});
+
+function loadDbPhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      dbImg = img;
+      dbFlipH = false; dbFlipV = false;
+      dbAnnotations = []; dbTextItems = []; dbAnglePoints = [];
+      dbUndoStack = []; dbRedoStack = [];
+      dbZoomLevel = 1; dbPanX = 0; dbPanY = 0;
+      const wrap = document.getElementById('dbPreviewWrap');
+      const zone = document.getElementById('dbUploadZone');
+      zone.style.display = 'none';
+      wrap.style.display = 'block';
+      document.getElementById('dbLabel').textContent = file.name;
+      document.getElementById('dbFlipHBtn')?.classList.remove('active');
+      document.getElementById('dbFlipVBtn')?.classList.remove('active');
+      applyDbZoom();
+      redrawDb();
+      updateDbAnnoList();
+      updateDbUndoButtons();
+      setDbTool('line');
+      updateOverlap();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetDbPhoto() {
+  dbImg = null;
+  dbFlipH = false; dbFlipV = false;
+  dbAnnotations = []; dbTextItems = []; dbAnglePoints = [];
+  dbUndoStack = []; dbRedoStack = [];
+  dbSelectedAnno = null;
+  dbZoomLevel = 1; dbPanX = 0; dbPanY = 0;
+  document.getElementById('dbUploadZone').style.display = '';
+  document.getElementById('dbPreviewWrap').style.display = 'none';
+  document.getElementById('dbPhotoFile').value = '';
+  updateDbAnnoList();
+  updateOverlap();
+}
+
+// ─── Databank ─────────────────────────────────────────────────────────────────
+function getGenderFromName(name) {
+  const lower = name.toLowerCase();
+  if (lower.includes('boy')) return 'boy';
+  if (lower.includes('girl')) return 'girl';
+  return 'unknown';
+}
+
+function getWeekFromName(name) {
+  // Match leading number: "12_...", "8w...", "20-..." etc.
+  const m = name.match(/^(\d+)/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function loadImgFolder() {
+  // Fetch directory listing from img/ folder
+  // Since we can't list directories in static HTML, we use a fetch to img/
+  // and parse any href links returned, OR rely on a prebuilt manifest.
+  // Fallback: try fetching img/manifest.json, else fetch img/ and parse hrefs.
+  fetch('img/manifest.json')
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(files => loadImgFiles(files))
+    .catch(() => {
+      // Try fetching the directory listing (works on some servers)
+      fetch('img/')
+        .then(r => r.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          const links = Array.from(doc.querySelectorAll('a[href]'))
+            .map(a => a.getAttribute('href'))
+            .filter(h => /\.(jpg|jpeg|png|bmp|gif|webp)$/i.test(h))
+            .map(h => h.replace(/^.*\//, '')); // strip path
+          if (links.length) loadImgFiles(links);
+          else showDbUploadFallback();
+        })
+        .catch(() => showDbUploadFallback());
+    });
+}
+
+function showDbUploadFallback() {
+  // Keep the upload button visible, show hint
+  document.getElementById('dbGrid').innerHTML = `<div class="db-empty">${t('noImgFolder')}</div>`;
+}
+
+function loadImgFiles(fileNames) {
+  dbItems = [];
+  let loaded = 0;
+  if (!fileNames.length) { showDbUploadFallback(); return; }
+  fileNames.forEach(name => {
+    const img = new Image();
+    img.onload = () => {
+      const week = getWeekFromName(name);
+      const gender = getGenderFromName(name);
+      dbItems.push({ week, gender, name, src: img.src, img });
+      loaded++;
+      if (loaded === fileNames.length) {
+        dbItems.sort((a, b) => a.week - b.week || a.name.localeCompare(b.name));
+        renderDbGrid();
+      }
+    };
+    img.onerror = () => { loaded++; if (loaded === fileNames.length) renderDbGrid(); };
+    img.src = 'img/' + name;
+  });
+}
+
+function addToDb(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const week = getWeekFromName(file.name);
+        const gender = getGenderFromName(file.name);
+        dbItems.push({ week, gender, name: file.name, src: ev.target.result, img });
+        dbItems.sort((a, b) => a.week - b.week || a.name.localeCompare(b.name));
+        renderDbGrid();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function filterDb() { renderDbGrid(); }
+
+function renderDbGrid() {
+  const week = parseInt(document.getElementById('selWeek').value) || null;
+  const grid = document.getElementById('dbGrid');
+  let items = dbItems;
+  if (week) items = items.filter(it => it.week === week);
+
+  if (!items.length) {
+    grid.innerHTML = `<div class="db-empty">${t('noEchoesFound')}${week ? `${t('forWeek')}${week}` : ''}.</div>`;
+    return;
+  }
+
+  grid.innerHTML = items.map((it) => {
+    const gClass = it.gender === 'boy' ? 'gender-boy' : it.gender === 'girl' ? 'gender-girl' : '';
+    const selClass = selectedDb === it ? 'selected' : '';
+    return `<div class="db-thumb ${gClass} ${selClass}" onclick="selectDb(${dbItems.indexOf(it)})" style="position:relative">
+      <img src="${it.src}" alt="${it.name}">
+      <div style="position:absolute;bottom:2px;left:2px;right:2px">
+        <span class="week-badge">${it.week}w</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Rebuild week dropdown to only show weeks that have images
+  const allWeeks = [...new Set(dbItems.map(it => it.week))].sort((a,b)=>a-b);
+  const sel = document.getElementById('selWeek');
+  const curVal = sel.value;
+  sel.innerHTML = `<option value="">${t('chooseWeek')}</option>` +
+    allWeeks.map(w => `<option value="${w}"${String(curVal)===String(w)?' selected':''}>${w}${t('weeks')}</option>`).join('');
+}
+
+function applyDbGenderTheme(gender) {
+  const panel = document.getElementById('dbPanel');
+  // Reset alle thema-classes
+  panel.classList.remove('db-panel-boy', 'db-panel-girl', 'db-panel-selected');
+  if (gender === 'boy') {
+    panel.classList.add('db-panel-boy');
+  } else if (gender === 'girl') {
+    panel.classList.add('db-panel-girl');
+  }
+  // Onbekend geslacht = blauw basis (geen extra class nodig)
+}
+
+function resetDbTheme() {
+  const panel = document.getElementById('dbPanel');
+  panel.classList.remove('db-panel-selected');
+}
+
+function selectDb(i) {
+  selectedDb = dbItems[i];
+  applyDbGenderTheme(selectedDb.gender);
+  // Overlap thema wisselen op basis van geselecteerde foto
+  const overlapPanel = document.getElementById('overlapPanel');
+  overlapPanel.classList.remove('overlap-theme-pink','overlap-theme-blue');
+  if (selectedDb.gender === 'boy') {
+    overlapPanel.classList.add('overlap-theme-blue');
+  } else {
+    overlapPanel.classList.add('overlap-theme-pink');
+  }
+  renderDbGrid();
+  document.getElementById('dbUploadZone').style.display = 'none';
+  const wrap = document.getElementById('dbPreviewWrap');
+  wrap.style.display = 'block';
+  dbImg = selectedDb.img;
+  dbFlipH = false; dbFlipV = false;
+  dbAnnotations = []; dbTextItems = []; dbAnglePoints = [];
+  dbUndoStack = []; dbRedoStack = [];
+  dbSelectedAnno = null;
+  dbZoomLevel = 1; dbPanX = 0; dbPanY = 0;
+  document.getElementById('dbFlipHBtn')?.classList.remove('active');
+  document.getElementById('dbFlipVBtn')?.classList.remove('active');
+  document.getElementById('dbLabel').textContent = `${t('week')} ${selectedDb.week} — ${selectedDb.gender === 'boy' ? '👦 Boy' : selectedDb.gender === 'girl' ? '👧 Girl' : selectedDb.name}`;
+  applyDbZoom();
+  redrawDb();
+  updateDbAnnoList();
+  updateDbUndoButtons();
+  setDbTool('line');
+  updateOverlap();
+}
+
+function useDbInOverlap() {
+  if (!selectedDb) return;
+  dbImg = selectedDb.img;
+  updateOverlap();
+  document.querySelector('.overlap-panel').scrollIntoView({behavior:'smooth'});
+}
+
+// ─── Overlap ──────────────────────────────────────────────────────────────────
+function drawOverlapPhotoLayer(ctx, W, H, conf) {
+  const {
+    img, canvasW, canvasH, flipH, flipV,
+    xOff, yOff, scale, rot, opacity,
+    annos, texts, showLines
+  } = conf;
+  if (!img || !canvasW || !canvasH) return;
+
+  const fit = Math.min(W / canvasW, H / canvasH, 1);
+  const dw = canvasW * fit * scale;
+  const dh = canvasH * fit * scale;
+
+  // Photo only (flip applied here, same as panel redraw)
+  const photo = document.createElement('canvas');
+  photo.width = canvasW;
+  photo.height = canvasH;
+  const pctx = photo.getContext('2d');
+  pctx.save();
+  pctx.translate(flipH ? canvasW : 0, flipV ? canvasH : 0);
+  pctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+  pctx.drawImage(img, 0, 0, canvasW, canvasH);
+  pctx.restore();
+
+  ctx.globalAlpha = opacity;
+  ctx.save();
+  ctx.translate(W / 2 + xOff, H / 2 + yOff);
+  ctx.rotate(rot);
+  ctx.drawImage(photo, -dw / 2, -dh / 2, dw, dh);
+  ctx.restore();
+
+  // Drawings from that photo — only if enabled; always full opacity when shown
+  if (showLines) {
+    const hasAnno = (annos && annos.some(a => !a.hidden)) || (texts && texts.some(t => !t.hidden));
+    if (hasAnno) {
+      const lines = document.createElement('canvas');
+      lines.width = canvasW;
+      lines.height = canvasH;
+      const lctx = lines.getContext('2d');
+      (annos || []).forEach(a => { if (!a.hidden) drawAnnotation(lctx, a); });
+      (texts || []).forEach(tItem => { if (!tItem.hidden) drawTextItem(lctx, tItem); });
+
+      ctx.globalAlpha = 1;
+      ctx.save();
+      ctx.translate(W / 2 + xOff, H / 2 + yOff);
+      ctx.rotate(rot);
+      ctx.drawImage(lines, -dw / 2, -dh / 2, dw, dh);
+      ctx.restore();
+    }
+  }
+
+  ctx.globalAlpha = 1;
+}
+
+function updateOverlap() {
+  // Houd state synchroon met schuiven (ook bij redraws van elders)
+  syncActiveFromSliders();
+
+  const W = 700, H = 400;
+  overlapCanvas.width = W;
+  overlapCanvas.height = H;
+  overlapCtx.clearRect(0, 0, W, H);
+  overlapCtx.fillStyle = '#0d0d0d';
+  overlapCtx.fillRect(0, 0, W, H);
+
+  const my = overlapState.my;
+  const db = overlapState.db;
+
+  updateOverlapLabels();
+
+  if (dbImg) {
+    const cw = dbCanvas.width || dbImg.width;
+    const ch = dbCanvas.height || dbImg.height;
+    drawOverlapPhotoLayer(overlapCtx, W, H, {
+      img: dbImg,
+      canvasW: cw,
+      canvasH: ch,
+      flipH: dbFlipH,
+      flipV: dbFlipV,
+      xOff: db.x,
+      yOff: db.y,
+      scale: db.scale / 100,
+      rot: db.rot * Math.PI / 180,
+      opacity: db.opacity / 100,
+      annos: dbAnnotations,
+      texts: dbTextItems,
+      showLines: db.showLines !== false
+    });
+  }
+
+  if (myImg) {
+    drawOverlapPhotoLayer(overlapCtx, W, H, {
+      img: myImg,
+      canvasW: myCanvas.width,
+      canvasH: myCanvas.height,
+      flipH: myFlipH,
+      flipV: myFlipV,
+      xOff: my.x,
+      yOff: my.y,
+      scale: my.scale / 100,
+      rot: my.rot * Math.PI / 180,
+      opacity: my.opacity / 100,
+      annos: annotations,
+      texts: textItems,
+      showLines: my.showLines !== false
+    });
+  }
+
+  if (!dbImg && !myImg) {
+    overlapCtx.font = '14px DM Sans, sans-serif';
+    overlapCtx.fillStyle = 'rgba(255,255,255,0.3)';
+    overlapCtx.textAlign = 'center';
+    overlapCtx.fillText(t('overlapEmpty'), W/2, H/2);
+  }
+}
+
+function saveOverlap() {
+  const link = document.createElement('a');
+  link.download = 'echo-overlap.png';
+  link.href = overlapCanvas.toDataURL();
+  link.click();
+}
+
+// ─── Overlap fullscreen ───────────────────────────────────────────────────────
+const olCanvas = document.getElementById('olCanvas');
+const olCtx = olCanvas.getContext('2d');
+const olWrap = document.getElementById('olCanvasWrap');
+
+function openOverlapFullscreen() {
+  const overlay = document.getElementById('olOverlay');
+  overlay.classList.add('open');
+  syncOverlayBodyLock();
+  requestAnimationFrame(() => requestAnimationFrame(() => olRedraw()));
+}
+
+function closeOverlapFullscreen() {
+  document.getElementById('olOverlay').classList.remove('open');
+  syncOverlayBodyLock();
+  updateOverlap();
+}
+
+function olSyncFromSlider() {
+  const s = getActiveOverlap();
+  s.opacity = parseFloat(document.getElementById('olOpSlider').value);
+  s.scale = parseFloat(document.getElementById('olScaleSlider').value);
+  s.rot = parseFloat(document.getElementById('olRotSlider').value);
+
+  // Spiegel naar hoofdscherm-schuiven
+  document.getElementById('opSlider').value = s.opacity;
+  document.getElementById('scaleSlider').value = s.scale;
+  document.getElementById('rotSlider').value = s.rot;
+  olUpdateLabels();
+  updateOverlap();
+  olRedraw();
+}
+  function olSyncCheckbox() {
+  const olCb = document.getElementById('olKeepLinesOpaque');
+  const mainCb = document.getElementById('keepLinesOpaque');
+  if (mainCb) mainCb.checked = olCb.checked;
+  olRedraw();
+}
+
+function olUpdateLabels() {
+  document.getElementById('olOpVal').textContent = document.getElementById('olOpSlider').value + '%';
+  document.getElementById('olScaleVal').textContent = document.getElementById('olScaleSlider').value + '%';
+  document.getElementById('olRotVal').textContent = document.getElementById('olRotSlider').value + '°';
+}
+
+function olRedraw() {
+  const _olCanvas = document.getElementById('olCanvas');
+  const _olCtx = _olCanvas.getContext('2d');
+  const toolbarH = document.getElementById('olToolbar').offsetHeight || 60;
+  const W = window.innerWidth;
+  const H = window.innerHeight - toolbarH;
+  _olCanvas.width = W;
+  _olCanvas.height = H;
+  _olCtx.clearRect(0, 0, W, H);
+  _olCtx.fillStyle = '#0d0d0d';
+  _olCtx.fillRect(0, 0, W, H);
+
+  const my = overlapState.my;
+  const db = overlapState.db;
+  const myXOff = my.x, myYOff = my.y;
+  const myScale = my.scale / 100;
+  const myRot = my.rot * Math.PI / 180;
+  const dbXOff = db.x, dbYOff = db.y;
+  const dbScale = db.scale / 100;
+  const dbRot = db.rot * Math.PI / 180;
+  const opacity = my.opacity / 100;
+  const dbOpacity = db.opacity / 100;
+
+  if (dbImg) {
+    const src = (dbCanvas && dbCanvas.width) ? dbCanvas : dbImg;
+    const r = Math.min(W / src.width, H / src.height, 1);
+    const dw = src.width * r * dbScale, dh = src.height * r * dbScale;
+    _olCtx.globalAlpha = dbOpacity;
+    _olCtx.save();
+    _olCtx.translate(W/2 + dbXOff, H/2 + dbYOff);
+    _olCtx.rotate(dbRot);
+    if (src === dbImg) _olCtx.scale(dbFlipH ? -1 : 1, dbFlipV ? -1 : 1);
+    _olCtx.drawImage(src, -dw/2, -dh/2, dw, dh);
+    _olCtx.restore();
+    _olCtx.globalAlpha = 1;
+  }
+
+  if (myImg) {
+    const keepOpaque = document.getElementById('olKeepLinesOpaque')?.checked ?? document.getElementById('keepLinesOpaque')?.checked ?? true;
+    const r = Math.min(W / myCanvas.width, H / myCanvas.height, 1);
+    const dw = myCanvas.width * r * myScale, dh = myCanvas.height * r * myScale;
+
+    if (keepOpaque) {
+      const tmpCanvas = document.createElement('canvas');
+      tmpCanvas.width = myCanvas.width;
+      tmpCanvas.height = myCanvas.height;
+      const tmpCtx = tmpCanvas.getContext('2d');
+      tmpCtx.drawImage(myImg, 0, 0, myCanvas.width, myCanvas.height);
+
+      _olCtx.globalAlpha = opacity;
+      _olCtx.save();
+      _olCtx.translate(W/2 + myXOff, H/2 + myYOff);
+      _olCtx.rotate(myRot);
+      _olCtx.scale(myFlipH ? -1 : 1, myFlipV ? -1 : 1);
+      _olCtx.drawImage(tmpCanvas, -dw/2, -dh/2, dw, dh);
+      _olCtx.restore();
+
+      const linesCanvas = document.createElement('canvas');
+      linesCanvas.width = myCanvas.width;
+      linesCanvas.height = myCanvas.height;
+      const linesCtx = linesCanvas.getContext('2d');
+      annotations.forEach(a => { if (!a.hidden) drawAnnotation(linesCtx, a); });
+      textItems.forEach(t => { if (!t.hidden) drawTextItem(linesCtx, t); });
+
+      _olCtx.globalAlpha = 1;
+      _olCtx.save();
+      _olCtx.translate(W/2 + myXOff, H/2 + myYOff);
+      _olCtx.rotate(myRot);
+      _olCtx.scale(myFlipH ? -1 : 1, myFlipV ? -1 : 1);
+      _olCtx.drawImage(linesCanvas, -dw/2, -dh/2, dw, dh);
+      _olCtx.restore();
+    } else {
+      _olCtx.globalAlpha = opacity;
+      _olCtx.save();
+      _olCtx.translate(W/2 + myXOff, H/2 + myYOff);
+      _olCtx.rotate(myRot);
+      _olCtx.scale(myFlipH ? -1 : 1, myFlipV ? -1 : 1);
+      _olCtx.drawImage(myCanvas, -dw/2, -dh/2, dw, dh);
+      _olCtx.restore();
+    }
+    _olCtx.globalAlpha = 1;
+  }
+
+  if (!dbImg && !myImg) {
+    _olCtx.font = '14px DM Sans, sans-serif';
+    _olCtx.fillStyle = 'rgba(255,255,255,0.3)';
+    _olCtx.textAlign = 'center';
+    _olCtx.fillText(t('overlapEmpty'), W/2, H/2);
+  }
+}
+
+// Escape sluit ook overlap fullscreen
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('olOverlay').classList.contains('open')) {
+    closeOverlapFullscreen();
+  }
+});
+
+// ─── Overlap drag / rotate / resize ──────────────────────────────────────────
+let overlapDragging = false, overlapRotating = false, overlapResizing = false;
+let overlapRotateMode = false;
+let overlapDragStartX = 0, overlapDragStartY = 0;
+let overlapDragStartXOff = 0, overlapDragStartYOff = 0;
+let overlapRotateStartAngle = 0, overlapRotateStartVal = 0;
+let overlapResizeStartDist = 0, overlapResizeStartScale = 0;
+
+// Get canvas-space coords from mouse event (accounts for CSS scaling)
+function getOverlapPos(e, canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const W = canvas.width, H = canvas.height;
+  return {
+    x: (e.clientX - rect.left) * (W / rect.width),
+    y: (e.clientY - rect.top) * (H / rect.height)
+  };
+}
+
+// Get the center and size of the active overlap image in a canvas of given W/H
+function getActiveImgBounds(W, H, scaleVal) {
+  const s = getActiveOverlap();
+  const scale = scaleVal !== undefined ? scaleVal : s.scale / 100;
+  let srcW, srcH;
+  if (overlapEditTarget === 'db') {
+    if (!dbImg) return null;
+    srcW = dbImg.width; srcH = dbImg.height;
+  } else {
+    if (!myImg) return null;
+    srcW = myCanvas.width; srcH = myCanvas.height;
+  }
+  const r = Math.min(W / srcW, H / srcH, 1);
+  const dw = srcW * r * scale;
+  const dh = srcH * r * scale;
+  return { cx: W/2 + s.x, cy: H/2 + s.y, dw, dh };
+}
+
+// Backwards-compatible alias
+function getMyImgBounds(W, H, scaleVal) {
+  return getActiveImgBounds(W, H, scaleVal);
+}
+
+function getActiveHighlightColor() {
+  return overlapEditTarget === 'db' ? '#1a78c2' : '#27ae60';
+}
+
+// Selection highlight around the currently edited photo
+function drawSelectionHighlightOn(ctx, W, H, scaleVal, rotRad) {
+  const bounds = getActiveImgBounds(W, H, scaleVal);
+  if (!bounds) return;
+  const { cx, cy, dw, dh } = bounds;
+  const color = getActiveHighlightColor();
+  const pad = 6;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rotRad);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([8, 5]);
+  ctx.strokeRect(-dw/2 - pad, -dh/2 - pad, dw + pad * 2, dh + pad * 2);
+  ctx.setLineDash([]);
+  // Soft outer glow
+  ctx.strokeStyle = color + '55';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(-dw/2 - pad, -dh/2 - pad, dw + pad * 2, dh + pad * 2);
+  // Corner ticks
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  const hw = dw/2 + pad, hh = dh/2 + pad, tick = 14;
+  ctx.beginPath();
+  // top-left
+  ctx.moveTo(-hw, -hh + tick); ctx.lineTo(-hw, -hh); ctx.lineTo(-hw + tick, -hh);
+  // top-right
+  ctx.moveTo(hw - tick, -hh); ctx.lineTo(hw, -hh); ctx.lineTo(hw, -hh + tick);
+  // bottom-left
+  ctx.moveTo(-hw, hh - tick); ctx.lineTo(-hw, hh); ctx.lineTo(-hw + tick, hh);
+  // bottom-right
+  ctx.moveTo(hw - tick, hh); ctx.lineTo(hw, hh); ctx.lineTo(hw, hh - tick);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// Draw resize handle on any ctx at given W/H dimensions
+function drawResizeHandleOn(ctx, W, H, scaleVal, rotRad, size) {
+  const bounds = getActiveImgBounds(W, H, scaleVal);
+  if (!bounds) return;
+  const { cx, cy, dw, dh } = bounds;
+  const hx = dw/2, hy = -dh/2;
+  const rx = Math.cos(rotRad)*hx - Math.sin(rotRad)*hy + cx;
+  const ry = Math.sin(rotRad)*hx + Math.cos(rotRad)*hy + cy;
+  const r = size || 8;
+  const color = getActiveHighlightColor();
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(rx, ry, r, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.translate(rx, ry);
+  ctx.rotate(rotRad - Math.PI/4);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  const a = r * 0.55;
+  ctx.beginPath();
+  ctx.moveTo(-a, 0); ctx.lineTo(a, 0);
+  ctx.moveTo(a-2, -2); ctx.lineTo(a, 0); ctx.lineTo(a-2, 2);
+  ctx.moveTo(-a+2, -2); ctx.lineTo(-a, 0); ctx.lineTo(-a+2, 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function isNearResizeHandle(px, py, W, H, scaleVal, rotRad, hitR) {
+  const bounds = getActiveImgBounds(W, H, scaleVal);
+  if (!bounds) return false;
+  const { cx, cy, dw, dh } = bounds;
+  const hx = dw/2, hy = -dh/2;
+  const rx = Math.cos(rotRad)*hx - Math.sin(rotRad)*hy + cx;
+  const ry = Math.sin(rotRad)*hx + Math.cos(rotRad)*hy + cy;
+  return Math.hypot(px - rx, py - ry) < (hitR || 14);
+}
+
+function hasActiveOverlapImg() {
+  return overlapEditTarget === 'db' ? !!dbImg : !!myImg;
+}
+
+// Patch updateOverlap to draw highlight + handle after rendering
+const _origUpdateOverlap = updateOverlap;
+updateOverlap = function() {
+  _origUpdateOverlap();
+  if (hasActiveOverlapImg()) {
+    const s = getActiveOverlap();
+    const rot = s.rot * Math.PI / 180;
+    const scale = s.scale / 100;
+    drawSelectionHighlightOn(overlapCtx, 700, 400, scale, rot);
+    drawResizeHandleOn(overlapCtx, 700, 400, scale, rot, 8);
+  }
+};
+
+const _origOlRedraw = olRedraw;
+olRedraw = function() {
+  _origOlRedraw();
+  if (hasActiveOverlapImg()) {
+    const _olC = document.getElementById('olCanvas');
+    const _olX = _olC ? _olC.getContext('2d') : null;
+    if (!_olC || !_olX) return;
+    const s = getActiveOverlap();
+    const rot = s.rot * Math.PI / 180;
+    const scale = s.scale / 100;
+    drawSelectionHighlightOn(_olX, _olC.width, _olC.height, scale, rot);
+    drawResizeHandleOn(_olX, _olC.width, _olC.height, scale, rot, 11);
+  }
+};
+
+// ── Main overlap canvas interactions ─────────────────────────────────────────
+overlapCanvas.style.cursor = 'grab';
+overlapCanvas.addEventListener('contextmenu', e => e.preventDefault());
+
+overlapCanvas.addEventListener('mousedown', e => {
+  if (!hasActiveOverlapImg()) return;
+  e.preventDefault();
+  const {x, y} = getOverlapPos(e, overlapCanvas);
+  const s = getActiveOverlap();
+  const rot = s.rot * Math.PI / 180;
+  const scale = s.scale / 100;
+
+  if (isNearResizeHandle(x, y, 700, 400, scale, rot, isPhoneLayout() ? 28 : 14)) {
+    overlapResizing = true;
+    const { cx, cy } = getActiveImgBounds(700, 400, scale);
+    overlapResizeStartDist = Math.hypot(x - cx, y - cy);
+    overlapResizeStartScale = s.scale;
+    overlapCanvas.style.cursor = 'nwse-resize';
+    return;
+  }
+  if (e.button === 2 || overlapRotateMode) {
+    overlapRotating = true;
+    const { cx, cy } = getActiveImgBounds(700, 400, scale);
+    overlapRotateStartAngle = Math.atan2(y - cy, x - cx);
+    overlapRotateStartVal = s.rot;
+    overlapCanvas.style.cursor = 'crosshair';
+    return;
+  }
+  overlapDragging = true;
+  overlapDragStartX = e.clientX; overlapDragStartY = e.clientY;
+  overlapDragStartXOff = s.x;
+  overlapDragStartYOff = s.y;
+  overlapCanvas.style.cursor = 'grabbing';
+});
+
+overlapCanvas.addEventListener('mousemove', e => {
+  if (!hasActiveOverlapImg()) return;
+  const {x, y} = getOverlapPos(e, overlapCanvas);
+  const s = getActiveOverlap();
+  const rot = s.rot * Math.PI / 180;
+  const scale = s.scale / 100;
+
+  if (overlapResizing) {
+    const bounds = getActiveImgBounds(700, 400);
+    if (!bounds) return;
+    const { cx, cy } = bounds;
+    const dist = Math.hypot(x - cx, y - cy);
+    const ns = Math.max(20, Math.min(200, overlapResizeStartScale * (dist / overlapResizeStartDist)));
+    s.scale = Math.round(ns);
+    document.getElementById('scaleSlider').value = s.scale;
+    const olScale = document.getElementById('olScaleSlider');
+    if (olScale) olScale.value = s.scale;
+    updateOverlap(); return;
+  }
+  if (overlapRotating) {
+    const bounds = getActiveImgBounds(700, 400);
+    if (!bounds) return;
+    const { cx, cy } = bounds;
+    const angle = Math.atan2(y - cy, x - cx);
+    let delta = (angle - overlapRotateStartAngle) * 180 / Math.PI;
+    let newRot = ((overlapRotateStartVal + delta + 180) % 360 + 360) % 360 - 180;
+    s.rot = Math.round(newRot);
+    document.getElementById('rotSlider').value = s.rot;
+    const olRot = document.getElementById('olRotSlider');
+    if (olRot) olRot.value = s.rot;
+    updateOverlap(); return;
+  }
+  if (overlapDragging) {
+    const dx = e.clientX - overlapDragStartX;
+    const dy = e.clientY - overlapDragStartY;
+    s.x = Math.max(-200, Math.min(200, overlapDragStartXOff + dx));
+    s.y = Math.max(-200, Math.min(200, overlapDragStartYOff + dy));
+    document.getElementById('xSlider').value = s.x;
+    document.getElementById('ySlider').value = s.y;
+    updateOverlap(); return;
+  }
+  overlapCanvas.style.cursor = isNearResizeHandle(x, y, 700, 400, scale, rot) ? 'nwse-resize' : 'grab';
+});
+
+function stopOverlap() {
+  overlapDragging = overlapRotating = overlapResizing = false;
+  overlapCanvas.style.cursor = 'grab';
+}
+overlapCanvas.addEventListener('mouseup', stopOverlap);
+overlapCanvas.addEventListener('mouseleave', stopOverlap);
+
+function toggleOverlapRotateMode() {
+  overlapRotateMode = !overlapRotateMode;
+  document.getElementById('overlapRotateToggle')?.classList.toggle('active', overlapRotateMode);
+  document.getElementById('olRotateToggle')?.classList.toggle('active', overlapRotateMode);
+}
+
+function bindOverlapGestures(el, kind) {
+  const opts = { passive: false };
+  let pinch = null;
+  el.addEventListener('touchstart', e => {
+    if (!hasActiveOverlapImg()) return;
+    e.preventDefault();
+    if (e.touches.length === 2) {
+      if (kind === 'main') overlapDragging = overlapRotating = overlapResizing = false;
+      else olDragging2 = olRotating = olResizing = false;
+      const t0 = e.touches[0], t1 = e.touches[1];
+      const s = getActiveOverlap();
+      pinch = {
+        dist: Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY),
+        angle: Math.atan2(t1.clientY - t0.clientY, t1.clientX - t0.clientX),
+        scale: s.scale,
+        rot: s.rot
+      };
+      return;
+    }
+    const t = e.touches[0];
+    el.dispatchEvent(new MouseEvent('mousedown', {
+      bubbles: true, cancelable: true, view: window,
+      clientX: t.clientX, clientY: t.clientY,
+      button: overlapRotateMode ? 2 : 0,
+      buttons: overlapRotateMode ? 2 : 1
+    }));
+  }, opts);
+  el.addEventListener('touchmove', e => {
+    if (!hasActiveOverlapImg()) return;
+    e.preventDefault();
+    if (e.touches.length === 2 && pinch) {
+      const t0 = e.touches[0], t1 = e.touches[1];
+      const dist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+      const angle = Math.atan2(t1.clientY - t0.clientY, t1.clientX - t0.clientX);
+      const s = getActiveOverlap();
+      s.scale = Math.max(20, Math.min(200, Math.round(pinch.scale * (dist / Math.max(1, pinch.dist)))));
+      let delta = (angle - pinch.angle) * 180 / Math.PI;
+      s.rot = Math.round(((pinch.rot + delta + 180) % 360 + 360) % 360 - 180);
+      document.getElementById('scaleSlider').value = s.scale;
+      document.getElementById('rotSlider').value = s.rot;
+      const olScale = document.getElementById('olScaleSlider');
+      const olRot = document.getElementById('olRotSlider');
+      if (olScale) olScale.value = s.scale;
+      if (olRot) olRot.value = s.rot;
+      if (kind === 'fs') olSyncFromSlider();
+      else updateOverlap();
+      return;
+    }
+    const t = e.touches[0];
+    if (!t) return;
+    el.dispatchEvent(new MouseEvent('mousemove', {
+      bubbles: true, cancelable: true, view: window,
+      clientX: t.clientX, clientY: t.clientY, button: 0, buttons: 1
+    }));
+  }, opts);
+  const end = e => {
+    pinch = null;
+    const t = e.changedTouches[0];
+    el.dispatchEvent(new MouseEvent('mouseup', {
+      bubbles: true, cancelable: true, view: window,
+      clientX: t ? t.clientX : 0, clientY: t ? t.clientY : 0, button: 0, buttons: 0
+    }));
+  };
+  el.addEventListener('touchend', end, opts);
+  el.addEventListener('touchcancel', end, opts);
+}
+bindOverlapGestures(overlapCanvas, 'main');
+
+// ── Fullscreen overlap canvas interactions ────────────────────────────────────
+let olDragging2 = false, olRotating = false, olResizing = false;
+let olDragStartX2 = 0, olDragStartY2 = 0;
+let olDragStartXOff2 = 0, olDragStartYOff2 = 0;
+let olRotateStartAngle = 0, olRotateStartVal = 0;
+let olResizeStartDist = 0, olResizeStartScale = 0;
+
+olWrap.addEventListener('contextmenu', e => e.preventDefault());
+
+olWrap.addEventListener('mousedown', e => {
+  if (!hasActiveOverlapImg()) return;
+  e.preventDefault();
+  const {x, y} = getOverlapPos(e, olCanvas);
+  const s = getActiveOverlap();
+  const rot = s.rot * Math.PI / 180;
+  const scale = s.scale / 100;
+  const W = olCanvas.width, H = olCanvas.height;
+
+  if (isNearResizeHandle(x, y, W, H, scale, rot, isPhoneLayout() ? 28 : 18)) {
+    olResizing = true;
+    const { cx, cy } = getActiveImgBounds(W, H, scale);
+    olResizeStartDist = Math.hypot(x - cx, y - cy);
+    olResizeStartScale = s.scale;
+    olWrap.style.cursor = 'nwse-resize';
+    return;
+  }
+  if (e.button === 2 || overlapRotateMode) {
+    olRotating = true;
+    const { cx, cy } = getActiveImgBounds(W, H, scale);
+    olRotateStartAngle = Math.atan2(y - cy, x - cx);
+    olRotateStartVal = s.rot;
+    olWrap.style.cursor = 'crosshair';
+    return;
+  }
+  olDragging2 = true;
+  olDragStartX2 = e.clientX; olDragStartY2 = e.clientY;
+  olDragStartXOff2 = s.x;
+  olDragStartYOff2 = s.y;
+  olWrap.style.cursor = 'grabbing';
+});
+
+olWrap.addEventListener('mousemove', e => {
+  if (!hasActiveOverlapImg()) return;
+  const {x, y} = getOverlapPos(e, olCanvas);
+  const W = olCanvas.width, H = olCanvas.height;
+  const s = getActiveOverlap();
+
+  if (olResizing) {
+    const bounds = getActiveImgBounds(W, H);
+    if (!bounds) return;
+    const { cx, cy } = bounds;
+    const dist = Math.hypot(x - cx, y - cy);
+    const ns = Math.max(20, Math.min(200, olResizeStartScale * (dist / olResizeStartDist)));
+    s.scale = Math.round(ns);
+    document.getElementById('olScaleSlider').value = s.scale;
+    document.getElementById('scaleSlider').value = s.scale;
+    olSyncFromSlider(); return;
+  }
+  if (olRotating) {
+    const bounds = getActiveImgBounds(W, H);
+    if (!bounds) return;
+    const { cx, cy } = bounds;
+    const angle = Math.atan2(y - cy, x - cx);
+    let delta = (angle - olRotateStartAngle) * 180 / Math.PI;
+    let newRot = ((olRotateStartVal + delta + 180) % 360 + 360) % 360 - 180;
+    s.rot = Math.round(newRot);
+    document.getElementById('olRotSlider').value = s.rot;
+    document.getElementById('rotSlider').value = s.rot;
+    olSyncFromSlider(); return;
+  }
+  if (olDragging2) {
+    const dx = e.clientX - olDragStartX2;
+    const dy = e.clientY - olDragStartY2;
+    s.x = Math.max(-200, Math.min(200, olDragStartXOff2 + dx));
+    s.y = Math.max(-200, Math.min(200, olDragStartYOff2 + dy));
+    document.getElementById('xSlider').value = s.x;
+    document.getElementById('ySlider').value = s.y;
+    updateOverlap(); olRedraw(); return;
+  }
+  const rot = s.rot * Math.PI / 180;
+  const scale = s.scale / 100;
+  olWrap.style.cursor = isNearResizeHandle(x, y, W, H, scale, rot, 18) ? 'nwse-resize' : 'grab';
+});
+
+function stopOl() {
+  olDragging2 = olRotating = olResizing = false;
+  olWrap.style.cursor = 'grab';
+}
+olWrap.addEventListener('mouseup', stopOl);
+olWrap.addEventListener('mouseleave', stopOl);
+bindOverlapGestures(olWrap, 'fs');
+
+// ─── Fullscreen ───────────────────────────────────────────────────────────────
+const fsCanvas = document.getElementById('fsCanvas');
+const fsCtx = fsCanvas.getContext('2d');
+const fsWrap = document.getElementById('fsCanvasWrap');
+
+let fsTool = 'line';
+let fsDrawColor = '#ff4d6d';
+let fsZoom = 1;
+let fsPanX = 0, fsPanY = 0;
+let fsIsDrawing = false;
+let fsStartX = 0, fsStartY = 0;
+let fsFreePoints = [];
+let fsAnglePoints = [];
+let fsSelectedAnno = null;
+let fsSelectedPointKey = null;
+let fsIsDragging = false;
+let fsDragOffX = 0, fsDragOffY = 0;
+let fsIsPanning = false;
+let fsPanStartX = 0, fsPanStartY = 0;
+let fsPanStartPX = 0, fsPanStartPY = 0;
+let fsPendingTextPos = null;
+
+function openFullscreen() {
+  if (!myImg) return;
+  const overlay = document.getElementById('fsOverlay');
+  overlay.classList.add('open');
+  syncOverlayBodyLock();
+  fsCanvas.width = myCanvas.width;
+  fsCanvas.height = myCanvas.height;
+
+  // Fit inside the fullscreen wrap via CSS zoom, not canvas size
+  const toolbarH = document.getElementById('fsToolbar').offsetHeight;
+  const availW = window.innerWidth;
+  const availH = window.innerHeight - toolbarH - 4;
+  const fit = Math.min(availW / fsCanvas.width, availH / fsCanvas.height, 1);
+  fsZoom = fit; fsPanX = 0; fsPanY = 0;
+  fsCanvas.style.transformOrigin = 'top left';
+  fsApplyZoom();
+
+  fsFreePoints = []; fsAnglePoints = []; fsSelectedAnno = null;
+  fsRedraw();
+  fsSetTool(fsTool || 'line');
+}
+
+function closeFullscreen() {
+  document.getElementById('fsOverlay').classList.remove('open');
+  syncOverlayBodyLock();
+  redrawMyEcho();
+  updateOverlap();
+}
+
+function fsApplyZoom() {
+  fsCanvas.style.transform = `translate(${fsPanX}px, ${fsPanY}px) scale(${fsZoom})`;
+  document.getElementById('fsZoomLabel').textContent = Math.round(fsZoom * 100) + '%';
+}
+
+function fsZoomIn() { fsZoom = Math.min(fsZoom + 0.25, 8); fsApplyZoom(); }
+function fsZoomOut() { fsZoom = Math.max(fsZoom - 0.25, 0.25); fsApplyZoom(); }
+function fsResetZoom() { fsZoom = 1; fsPanX = 0; fsPanY = 0; fsApplyZoom(); }
+
+fsWrap.addEventListener('wheel', e => {
+  if (!myImg) return;
+  e.preventDefault();
+  fsZoom = Math.min(Math.max(fsZoom + (e.deltaY > 0 ? -0.15 : 0.15), 0.25), 8);
+  fsApplyZoom();
+}, { passive: false });
+
+function fsGetPos(e) {
+  const rect = fsCanvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * (fsCanvas.width / rect.width),
+    y: (e.clientY - rect.top) * (fsCanvas.height / rect.height)
+  };
+}
+
+function fsRedraw() {
+  if (!myImg) return;
+  fsCtx.clearRect(0, 0, fsCanvas.width, fsCanvas.height);
+  fsCtx.save();
+  fsCtx.translate(myFlipH ? fsCanvas.width : 0, myFlipV ? fsCanvas.height : 0);
+  fsCtx.scale(myFlipH ? -1 : 1, myFlipV ? -1 : 1);
+  fsCtx.drawImage(myImg, 0, 0, fsCanvas.width, fsCanvas.height);
+  fsCtx.restore();
+  // Draw shared annotations (same arrays as main canvas)
+  annotations.forEach(a => drawAnnotation(fsCtx, a));
+  textItems.forEach(t => drawTextItem(fsCtx, t));
+  if (fsSelectedAnno) drawSelectionHandle(fsCtx, fsSelectedAnno);
+  if (fsAnglePoints.length >= 1) {
+    fsCtx.beginPath(); fsCtx.arc(fsAnglePoints[0].x, fsAnglePoints[0].y, 5, 0, Math.PI*2);
+    fsCtx.fillStyle = fsDrawColor; fsCtx.fill();
+  }
+  if (fsAnglePoints.length === 2) drawAngleLines(fsCtx, fsAnglePoints[0], fsAnglePoints[1], null, fsDrawColor, true);
+}
+
+function fsSetTool(t) {
+  fsTool = t;
+  document.querySelectorAll('#fsToolbar .tool-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('fsBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+  if (btn) btn.classList.add('active');
+  fsCanvas.style.cursor = t === 'select' ? 'default' : t === 'text' ? 'text' : 'crosshair';
+  if (t !== 'angle') fsAnglePoints = [];
+  document.getElementById('fsAngleDisplay').textContent = '';
+  fsFreePoints = [];
+  if (t !== 'select') { fsSelectedAnno = null; fsRedraw(); }
+}
+
+function fsSetColor(el) {
+  document.querySelectorAll('.fs-color-swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  fsDrawColor = el.dataset.c;
+  drawColor = fsDrawColor; // keep in sync
+  if (fsSelectedAnno) { fsSelectedAnno.color = fsDrawColor; fsRedraw(); redrawMyEcho(); }
+}
+
+function fsClearAnnotations() {
+  saveSnapshot();
+  annotations = []; textItems = []; fsAnglePoints = []; fsSelectedAnno = null;
+  document.getElementById('fsAngleDisplay').textContent = '';
+  fsRedraw(); redrawMyEcho(); updateAnnoList(); updateOverlap();
+}
+function fsDeleteSelected() {
+  if (!fsSelectedAnno) return;
+  saveSnapshot();
+  if (fsSelectedAnno.text !== undefined) {
+    textItems = textItems.filter(t => t !== fsSelectedAnno);
+  } else {
+    annotations = annotations.filter(a => a !== fsSelectedAnno);
+  }
+  fsSelectedAnno = null; selectedAnno = null;
+  updateAnnoList(); fsRedraw(); redrawMyEcho(); updateOverlap();
+}
+  
+function fsCommitText(e) {
+  if (e.key === 'Enter' || e.key === 'Escape') {
+    const inp = document.getElementById('fsTextInput');
+    if (e.key === 'Enter' && inp.value.trim() && fsPendingTextPos) {
+      saveSnapshot();
+      textItems.push({text: inp.value.trim(), x: fsPendingTextPos.x, y: fsPendingTextPos.y, color: fsDrawColor, size: 14});
+      updateAnnoList(); fsRedraw(); redrawMyEcho(); updateOverlap();
+    }
+    inp.style.display = 'none'; inp.value = ''; fsPendingTextPos = null;
+  }
+}
+
+// ── FS canvas mouse events ────────────────────────────────────────────────────
+fsCanvas.addEventListener('mousedown', e => {
+  if (!myImg) return;
+  const {x, y} = fsGetPos(e);
+
+  if (fsTool === 'text') {
+    fsPendingTextPos = {x, y};
+    const inp = document.getElementById('fsTextInput');
+    inp.style.display = 'block';
+    inp.style.left = (e.offsetX + 2) + 'px';
+    inp.style.top = (e.offsetY - 20) + 'px';
+    inp.value = ''; inp.focus();
+    return;
+  }
+
+  if (fsTool === 'angle') {
+    fsAnglePoints.push({x, y});
+    if (fsAnglePoints.length === 3) {
+      const angle = calcAngle(fsAnglePoints[0], fsAnglePoints[1], fsAnglePoints[2]);
+      saveSnapshot();
+      annotations.push({type:'angle', p0:fsAnglePoints[0], p1:fsAnglePoints[1], p2:fsAnglePoints[2], color:fsDrawColor, angle});
+      document.getElementById('fsAngleDisplay').textContent = angle.toFixed(1) + '°';
+      document.getElementById('angleDisplay').textContent = angle.toFixed(1) + '°';
+      updateAnnoList(); fsAnglePoints = []; fsRedraw(); redrawMyEcho(); updateOverlap();
+    } else { fsRedraw(); }
+    return;
+  }
+
+  if (fsTool === 'select') {
+    const hit = hitTest(x, y);
+    if (hit) {
+      fsSelectedAnno = hit.item; fsSelectedPointKey = hit.pointKey;
+      fsIsDragging = true; fsDragOffX = x; fsDragOffY = y;
+      fsCanvas.style.cursor = hit.pointKey === 'body' ? 'grabbing' : 'crosshair';
+    } else {
+      fsSelectedAnno = null;
+      fsIsPanning = true; fsPanStartX = e.clientX; fsPanStartY = e.clientY;
+      fsPanStartPX = fsPanX; fsPanStartPY = fsPanY;
+      fsCanvas.style.cursor = 'grab';
+    }
+    fsRedraw(); return;
+  }
+
+  if (fsTool === 'line') {
+    if (!fsIsDrawing) {
+      fsIsDrawing = true; fsStartX = x; fsStartY = y;
+    } else {
+      fsIsDrawing = false;
+      saveSnapshot();
+      annotations.push({type:'line', x1:fsStartX, y1:fsStartY, x2:x, y2:y, color:fsDrawColor});
+      updateAnnoList();
+      fsRedraw(); redrawMyEcho(); updateOverlap();
+    }
+    return;
+  }
+
+  fsIsDrawing = true; fsStartX = x; fsStartY = y;
+  if (fsTool === 'draw') fsFreePoints = [{x, y}];
+});
+
+fsCanvas.addEventListener('mousemove', e => {
+  if (!myImg) return;
+  const {x, y} = fsGetPos(e);
+
+  if (fsTool === 'select') {
+    if (fsIsDragging && fsSelectedAnno) {
+      moveAnno(fsSelectedAnno, fsSelectedPointKey, x - fsDragOffX, y - fsDragOffY);
+      fsDragOffX = x; fsDragOffY = y;
+      // Sync angle display
+      if (fsSelectedAnno.type === 'angle') document.getElementById('fsAngleDisplay').textContent = fsSelectedAnno.angle.toFixed(1) + '°';
+      fsRedraw(); redrawMyEcho(); updateOverlap();
+    } else if (fsIsPanning) {
+      fsPanX = fsPanStartPX + (e.clientX - fsPanStartX);
+      fsPanY = fsPanStartPY + (e.clientY - fsPanStartY);
+      fsApplyZoom();
+    } else {
+      const hit = hitTest(x, y);
+      fsCanvas.style.cursor = !hit ? 'default' : hit.pointKey === 'body' ? 'grab' : 'crosshair';
+    }
+    return;
+  }
+
+  if (!fsIsDrawing) return;
+
+  if (fsTool === 'draw') {
+    fsFreePoints.push({x, y});
+    fsRedraw();
+    fsCtx.strokeStyle = fsDrawColor; fsCtx.lineWidth = 2;
+    fsCtx.beginPath();
+    fsFreePoints.forEach((p, i) => i===0 ? fsCtx.moveTo(p.x,p.y) : fsCtx.lineTo(p.x,p.y));
+    fsCtx.stroke();
+  } else if (fsTool === 'line') {
+    fsRedraw();
+    fsCtx.strokeStyle = fsDrawColor; fsCtx.lineWidth = 2; fsCtx.setLineDash([]);
+    fsCtx.beginPath(); fsCtx.moveTo(fsStartX, fsStartY); fsCtx.lineTo(x, y); fsCtx.stroke();
+    const dx=x-fsStartX, dy=y-fsStartY;
+    fsCtx.font='bold 12px DM Sans,sans-serif'; fsCtx.fillStyle=fsDrawColor;
+    fsCtx.fillText(Math.round(Math.sqrt(dx*dx+dy*dy))+'px',(fsStartX+x)/2+4,(fsStartY+y)/2-4);
+  }
+});
+
+fsCanvas.addEventListener('mouseup', e => {
+  if (!myImg) return;
+  if (fsTool === 'select') {
+    fsIsDragging = false; fsIsPanning = false;
+    fsCanvas.style.cursor = fsSelectedAnno ? 'grab' : 'default';
+    updateAnnoList(); return;
+  }
+  if (!fsIsDrawing) return;
+  const {x, y} = fsGetPos(e);
+  if (fsTool === 'line') return;
+  fsIsDrawing = false;
+  if (fsTool === 'draw') {
+    saveSnapshot();
+    annotations.push({type:'draw', pts:[...fsFreePoints], color:fsDrawColor});
+    fsFreePoints = []; updateAnnoList();
+  }
+  fsRedraw(); redrawMyEcho(); updateOverlap();
+});
+
+bindCanvasTouch(fsCanvas, {
+  getZoom: () => fsZoom,
+  setZoom: z => { fsZoom = Math.min(Math.max(z, 0.25), 8); fsApplyZoom(); },
+  cancelDraw: () => { fsIsDrawing = false; fsIsDragging = false; fsIsPanning = false; }
+});
+
+
+  
+
+// Close with Escape key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('fsOverlay').classList.contains('open')) {
+    closeFullscreen();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+});
+// Init
+setTool('line');
+applyLanguage();
+updateUndoButtons();
+updateSaveProjectBtn();
+  
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadImgFolder();
+});
+</script>
+</body>
+</html>
